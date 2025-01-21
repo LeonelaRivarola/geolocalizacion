@@ -1,0 +1,6 @@
+/mi-app
+  /public
+    index.html    (Tu archivo HTML principal)
+    initMap.js    (El archivo JS con la función initMap y la lógica del mapa)
+  server.js      (El servidor Express, que maneja la base de datos y las rutas)
+  package.json   (Tu archivo de configuración de Node.js, si no lo has creado aún)

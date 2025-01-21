@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa de Clientes</title>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA7Me8m0t_ztRIarrm45Uc0WKATVGgX_-Y"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="map"></div> <!-- Iniciar mapa -->
+
+  <!-- Modal de confirmación -->
+  <div id="locationModal" class="modal">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h2>Actualizar Geolocalización</h2>
+        <button class="close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <form>
+          <div class="row mb-3">
+            <label for="latitud">Latitud:</label>
+            <input type="number" class="form-control" id="latitud">
+          </div>
+
+          <div class="row mb-3">
+            <label for="longitud">Longitud:</label>
+            <input type="number" class="form-control" id="longitud">
+          </div>
+
+          <div class="row mb-3">
+            <label for="direccion">Dirección:</label>
+            <input type="text" class="form-control" id="direccion">
+          </div>
+
+          <div class="row mb-3">
+            <label for="titular">Titular:</label>
+            <input type="text" class="form-control" id="titular">
+          </div>
+
+          <div class="row mb-3">
+            <label for="cliente">Cliente:</label>
+            <input type="number" class="form-control" id="cliente">
+          </div>
+
+          <div class="row mb-3">
+            <label for="sumin">Sumin:</label>
+            <input type="number" class="form-control" id="sumin">
+          </div>
+
+          <div class="row mb-3">
+            <label for="usugrabado">usuGrabado:</label>
+            <div class="form-check">
+              <input type="checkbox" id="usugrabado" checked disabled> Sí
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <label for="usufecha">UsuFecha:</label>
+            <input type="date" class="form-control" id="usufecha">
+          </div>
+
+          <div class="row mb-3">
+            <label for="usutime">UsuTime:</label>
+            <input type="time" class="form-control" id="usutime">
+          </div>
+
+        </form>
+      </div>
+
+      <button id="confirmBtn" class="btn btn-primary">Guardar</button>
+      <button id="cancelBtn" class="btn btn-secondary">Cancelar</button>
+
+    </div>
+
+  </div>
+
+  <script src="initMap.js"></script>
+</body>
+
+</html>
