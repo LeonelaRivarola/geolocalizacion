@@ -137,13 +137,15 @@ function initMap() {
           }
 
 
-          let previousLat = marker.getPosition().lat(); // Guardar la latitud original
-          let previousLng = marker.getPosition().lng(); // Guardar la longitud original
+          // let previousLat = marker.getPosition().lat(); // Guardar la latitud original
+          // let previousLng = marker.getPosition().lng(); // Guardar la longitud original
 
           // Escuchar el evento 'dragend' para cuando el marcador es arrastrado
           marker.addListener('dragend', function () {
             const newLat = marker.getPosition().lat();
             const newLng = marker.getPosition().lng();
+
+            console.log("lat y lon de el arrastre", newLat, newLng)
 
             // Actualizar los valores en los inputs del modal con las nuevas coordenadas
             document.getElementById("latitud").value = newLat;
@@ -158,12 +160,16 @@ function initMap() {
             // Modificar el evento de confirmación después de arrastrar
             confirmBtn.onclick = function () {
               
-              var newLat = parseFloat(document.getElementById("latitud").value);
-              var newLng = parseFloat(document.getElementById("longitud").value);
+              // var newLat = parseFloat(document.getElementById("latitud").value);
+              // var newLng = parseFloat(document.getElementById("longitud").value);
+
+              console.log("lat y lon de el arrastre en el confirmar", newLat, newLng)
 
               if (!isNaN(newLat) && !isNaN(newLng)) {
                 // Mover el marcador a la nueva posición
                 marker.setPosition({ lat: newLat, lng: newLng });
+
+                
 
                 // Actualizar la base de datos con las nuevas coordenadas
                 updateLocationInDatabase(marker.id, newLat, newLng);
@@ -171,9 +177,9 @@ function initMap() {
                 // Cerrar el modal
                 modal.style.display = "none";
 
-                // Actualizar las coordenadas previas
-                previousLat = newLat;
-                previousLng = newLng;
+                // // Actualizar las coordenadas previas
+                // previousLat = newLat;
+                // previousLng = newLng;
               } else {
                 alert("Ubicación no válida");
               }
@@ -183,7 +189,7 @@ function initMap() {
             cancelBtn.onclick = function () {
               // Restaurar la posición original del marcador si se cancela
               modal.style.display = "none";
-              marker.setPosition({ lat: previousLat, lng: previousLng });
+              // marker.setPosition({ lat: previousLat, lng: previousLng });
             };
           });
         });
