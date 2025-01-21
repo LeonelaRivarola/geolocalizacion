@@ -17,7 +17,7 @@ function initMap() {
   var confirmBtn = document.getElementById("confirmBtn");
   var cancelBtn = document.getElementById("cancelBtn");
 
-  // Obtener la ubicación desde el servidor
+  //ubicación desde el servidor
   fetch(`/get-locations?ruta=${ruta}`)
     .then(response => response.json())
     .then(data => {
@@ -59,40 +59,39 @@ function initMap() {
             infoWindow.open(map, marker);
             currentInfoWindow = infoWindow;
 
-            // Abrir el modal y cargar los datos en los inputs
+            //modal y datos en los inputs
             modal.style.display = "block";
-            loadLocationData(marker.id);  // Cargar datos del cliente
+            loadLocationData(marker.id);  
 
-            // Modificar el evento de confirmación
+            // Modificar
             confirmBtn.onclick = function () {
               var newLat = parseFloat(document.getElementById("latitud").value);
               var newLng = parseFloat(document.getElementById("longitud").value);
 
               if (!isNaN(newLat) && !isNaN(newLng)) {
-                // Mover el marcador a la nueva posición
+
+                // nueva pos
                 marker.setPosition({ lat: newLat, lng: newLng });
-
-                // Actualizar la base de datos con las nuevas coordenadas
+                //Actualiza
                 updateLocationInDatabase(marker.id, newLat, newLng);
-
-                // Cerrar el modal
                 modal.style.display = "none";
+
               } else {
                 alert("Ubicación no válida");
               }
             };
 
-            // Evento para cancelar
+            //cancelar
             cancelBtn.onclick = function () {
               modal.style.display = "none";
             };
 
-            // Cerrar el modal con la 'x'
+            // Cerrar 'x'
             span.onclick = function () {
               modal.style.display = "none";
             };
 
-            // Cerrar el modal con la tecla 'Escape'
+            // Cerrar 'Escape'
             window.addEventListener("keydown", function (event) {
               if (event.key === "Escape") {
                 modal.style.display = "none";
@@ -120,7 +119,7 @@ function initMap() {
               });
           }
 
-          // Función para actualizar la ubicación en la base de datos
+          //actualizar la ubicación en la base de datos
           function updateLocationInDatabase(id, lat, lng) {
             fetch('/update-location', {
               method: 'POST',
@@ -137,49 +136,36 @@ function initMap() {
           }
 
 
-          // let previousLat = marker.getPosition().lat(); // Guardar la latitud original
-          // let previousLng = marker.getPosition().lng(); // Guardar la longitud original
+          let previousLat = marker.getPosition().lat(); // latitud original
+          let previousLng = marker.getPosition().lng(); // longitud original
 
-          // Escuchar el evento 'dragend' para cuando el marcador es arrastrado
+          // marcador es arrastrado
           marker.addListener('dragend', function () {
             const newLat = marker.getPosition().lat();
             const newLng = marker.getPosition().lng();
 
-            console.log("lat y lon de el arrastre", newLat, newLng)
 
-            // Actualizar los valores en los inputs del modal con las nuevas coordenadas
+            // inputs del modal con las nuevas coordenadas
             document.getElementById("latitud").value = newLat;
             document.getElementById("longitud").value = newLng;
 
-            // Abrir el modal cuando se termine de arrastrar el marcador
+            console.log("lat y lon de el arrastre", document.getElementById("latitud").value, document.getElementById("longitud").value)
+            //modal se abre
             modal.style.display = "block";
-
-            // Cargar la información relacionada al marcador, si es necesario
             loadLocationData(marker.id);
-
-            // Modificar el evento de confirmación después de arrastrar
+            //funcion del boton confirmar
             confirmBtn.onclick = function () {
-              
-              // var newLat = parseFloat(document.getElementById("latitud").value);
-              // var newLng = parseFloat(document.getElementById("longitud").value);
 
               console.log("lat y lon de el arrastre en el confirmar", newLat, newLng)
 
               if (!isNaN(newLat) && !isNaN(newLng)) {
-                // Mover el marcador a la nueva posición
                 marker.setPosition({ lat: newLat, lng: newLng });
-
-                
-
-                // Actualizar la base de datos con las nuevas coordenadas
                 updateLocationInDatabase(marker.id, newLat, newLng);
 
-                // Cerrar el modal
                 modal.style.display = "none";
-
-                // // Actualizar las coordenadas previas
-                // previousLat = newLat;
-                // previousLng = newLng;
+                
+                previousLat = newLat;
+                previousLng = newLng;
               } else {
                 alert("Ubicación no válida");
               }
@@ -187,9 +173,9 @@ function initMap() {
 
             // Cancelar el modal
             cancelBtn.onclick = function () {
-              // Restaurar la posición original del marcador si se cancela
+              // Restaurar 
               modal.style.display = "none";
-              // marker.setPosition({ lat: previousLat, lng: previousLng });
+              marker.setPosition({ lat: previousLat, lng: previousLng });
             };
           });
         });
@@ -202,5 +188,5 @@ function initMap() {
     });
 }
 
-// Inicializa el mapa cuando la página carga
+// Inicializa el mapa
 google.maps.event.addDomListener(window, 'load', initMap);
