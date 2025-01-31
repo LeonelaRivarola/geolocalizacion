@@ -1,3 +1,6 @@
+let currentInfoWindow = null;
+let markers = []; // Guardará todos los marcadores
+
 function initMap() {
   const urlParams = new URLSearchParams(window.location.search);
   const ruta = urlParams.get('ruta');
@@ -7,23 +10,23 @@ function initMap() {
     return;
   }
 
-  var map = new google.maps.Map(document.getElementById('map'), {
+  const map = new google.maps.Map(document.getElementById('map'), {
     center: { lat: -35.663185, lng: -63.761511 },
-    zoom: 20
+    zoom: 15,
   });
 
-  var modal = document.getElementById("locationModal");
-  var span = document.getElementsByClassName("close")[0];
-  var confirmBtn = document.getElementById("confirmBtn");
-  var cancelBtn = document.getElementById("cancelBtn");
+  const modal = document.getElementById("locationModal");
+  const span = document.getElementsByClassName("close")[0];
+  const confirmBtn = document.getElementById("confirmBtn");
+  const cancelBtn = document.getElementById("cancelBtn");
 
-  //ubicación desde el servidor
+  // Obtener ubicaciones del servidor
   fetch(`/get-locations?ruta=${ruta}`)
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       if (data.success) {
-        data.locations.forEach(location => {
-          let { SUM_CLIENTE, SUM_ID, SUM_LATITUD, SUM_LONGITUD, SUM_CALLE, CLI_TITULAR } = location;
+        data.locations.forEach((location) => {
+          const { SUM_CLIENTE, SUM_ID, SUM_LATITUD, SUM_LONGITUD, SUM_CALLE, SUM_ALTURA, CLI_TITULAR } = location;
           const lat = parseFloat(SUM_LATITUD);
           const lng = parseFloat(SUM_LONGITUD);
 
@@ -32,161 +35,156 @@ function initMap() {
             return;
           }
 
-          var marker = new google.maps.Marker({
-            position: { lat: lat, lng: lng },
-            map: map,
+          const calle = SUM_CALLE.trim().replace(/\s+/g, " ");
+          const altura = SUM_ALTURA ? SUM_ALTURA : '';
+          const marker = new google.maps.Marker({
+            position: { lat, lng },
+            map,
             draggable: true,
-            title: 'Domicilio del Cliente',
-            id: SUM_ID
+            title: `${calle} ${altura} * ${CLI_TITULAR}`,
           });
 
-          var infoWindow = new google.maps.InfoWindow({
+          markers.push(marker); 
+
+          const infoWindow = new google.maps.InfoWindow({
             content: `
               <div>
                 <strong>${CLI_TITULAR}</strong><br>
-                Dirección: ${SUM_CALLE}<br>
+                Dirección: ${calle} ${altura}<br>
                 Lat: ${lat} - Lng: ${lng}
               </div>
-            `
+            `,
           });
 
-          let currentInfoWindow = null;
 
-          marker.addListener('click', function () {
-            if (currentInfoWindow) {
-              currentInfoWindow.close();
-            }
-            infoWindow.open(map, marker);
-            currentInfoWindow = infoWindow;
 
-            //modal y datos en los inputs
+          marker.addListener("click", function () {
+            console.log(`Clic en marcador ID: ${SUM_ID}, Cliente: ${SUM_CLIENTE}`);
+
+            // Cargar los datos de la ubicación directamente del marcador en lugar de hacer una nueva llamada a la API
+            const locationData = {
+              lat: marker.getPosition().lat(),
+              lng: marker.getPosition().lng(),
+              direccion: `${calle} ${altura}`,  
+              titular: CLI_TITULAR,
+              cliente: SUM_CLIENTE,
+              sumin: SUM_ID,
+            };
+
+
+            // Modal y datos en los inputs
             modal.style.display = "block";
-            loadLocationData(marker.id);  
+            // loadLocationData(SUM_CLIENTE);
+            // Modal y datos en los inputs
+            modal.style.display = "block";
+            document.getElementById("latitud").value = locationData.lat;
+            document.getElementById("longitud").value = locationData.lng;
+            document.getElementById("direccion").value = locationData.direccion;
+            document.getElementById("titular").value = locationData.titular;
+            document.getElementById("cliente").value = locationData.cliente;
+            document.getElementById("sumin").value = locationData.sumin;
 
-            // Modificar
             confirmBtn.onclick = function () {
-              var newLat = parseFloat(document.getElementById("latitud").value);
-              var newLng = parseFloat(document.getElementById("longitud").value);
+              const newLat = parseFloat(document.getElementById("latitud").value);
+              const newLng = parseFloat(document.getElementById("longitud").value);
 
               if (!isNaN(newLat) && !isNaN(newLng)) {
-
-                // nueva pos
                 marker.setPosition({ lat: newLat, lng: newLng });
-                //Actualiza
-                updateLocationInDatabase(marker.id, newLat, newLng);
+                updateLocationInDatabase(SUM_CLIENTE, newLat, newLng);
                 modal.style.display = "none";
-
               } else {
                 alert("Ubicación no válida");
               }
             };
 
-            //cancelar
-            cancelBtn.onclick = function () {
-              modal.style.display = "none";
-            };
-
-            // Cerrar 'x'
-            span.onclick = function () {
-              modal.style.display = "none";
-            };
-
-            // Cerrar 'Escape'
+            cancelBtn.onclick = closeModal;
+            span.onclick = closeModal;
             window.addEventListener("keydown", function (event) {
-              if (event.key === "Escape") {
-                modal.style.display = "none";
-              }
+              if (event.key === "Escape") closeModal();
             });
           });
 
-          // Función para cargar los datos de la ubicación en el modal
-          function loadLocationData(id) {
-            fetch(`/get-location/${id}`)
-              .then(response => response.json())
-              .then(data => {
-                if (data.success) {
-                  const location = data.location;
-                  document.getElementById("latitud").value = location.lat;
-                  document.getElementById("longitud").value = location.lng;
-                  document.getElementById("direccion").value = location.direccion;
-                  document.getElementById("titular").value = location.titular;
-                  document.getElementById("cliente").value = location.cliente;
-                  document.getElementById("sumin").value = location.sumin;
-                }
-              })
-              .catch(error => {
-                console.error('Error al cargar los datos de la ubicación:', error)
-              });
-          }
+          let originalLat = marker.getPosition().lat();
+          let originalLng = marker.getPosition().lng();
 
-          //actualizar la ubicación en la base de datos
-          function updateLocationInDatabase(id, lat, lng) {
-            fetch('/update-location', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: id, lat: lat, lng: lng })
-            })
-              .then(response => response.json())
-              .then(data => {
-                console.log('Ubicación actualizada:', data);
-              })
-              .catch(error => {
-                console.error('Error al actualizar la ubicación:', error);
-              });
-          }
-
-
-          let previousLat = marker.getPosition().lat(); // latitud original
-          let previousLng = marker.getPosition().lng(); // longitud original
-
-          // marcador es arrastrado
-          marker.addListener('dragend', function () {
+          marker.addListener("dragend", function () {
             const newLat = marker.getPosition().lat();
             const newLng = marker.getPosition().lng();
 
-
-            // inputs del modal con las nuevas coordenadas
+            
             document.getElementById("latitud").value = newLat;
             document.getElementById("longitud").value = newLng;
-
-            console.log("lat y lon de el arrastre", document.getElementById("latitud").value, document.getElementById("longitud").value)
-            //modal se abre
             modal.style.display = "block";
-            loadLocationData(marker.id);
-            //funcion del boton confirmar
+
             confirmBtn.onclick = function () {
-
-              console.log("lat y lon de el arrastre en el confirmar", newLat, newLng)
-
               if (!isNaN(newLat) && !isNaN(newLng)) {
                 marker.setPosition({ lat: newLat, lng: newLng });
-                updateLocationInDatabase(marker.id, newLat, newLng);
-
+                updateLocationInDatabase(SUM_CLIENTE, newLat, newLng);
                 modal.style.display = "none";
-                
-                previousLat = newLat;
-                previousLng = newLng;
+                originalLat = newLat;
+                originalLng = newLng;
               } else {
                 alert("Ubicación no válida");
               }
             };
 
-            // Cancelar el modal
-            cancelBtn.onclick = function () {
-              // Restaurar 
-              modal.style.display = "none";
-              marker.setPosition({ lat: previousLat, lng: previousLng });
-            };
+            cancelBtn.onclick = closeModal;
+            span.onclick = closeModal;
+            window.addEventListener("keydown", function (event) {
+              if (event.key === "Escape") closeModal();
+            });
           });
+
+          function closeModal() {
+            marker.setPosition({ lat: originalLat, lng: originalLng });
+            modal.style.display = "none";
+          }
         });
       } else {
-        console.error('Error al obtener las ubicaciones del servidor');
+        console.error("Error al obtener las ubicaciones del servidor");
       }
     })
-    .catch(error => {
-      console.error('Error al cargar las ubicaciones:', error);
+    .catch((error) => {
+      console.error("Error al cargar las ubicaciones:", error);
     });
 }
 
-// Inicializa el mapa
-google.maps.event.addDomListener(window, 'load', initMap);
+// Actualizar ubicación en la base de datos
+function updateLocationInDatabase(id, lat, lng) {
+  fetch("/update-location", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, lat, lng }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("Ubicación actualizada:", data);
+    })
+    .catch((error) => {
+      console.error("Error al actualizar la ubicación:", error);
+    });
+}
+
+
+// Cargar datos en el modal
+function loadLocationData(id) {
+  fetch(`/get-location/${id}`)
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        const location = data.location;
+        document.getElementById("latitud").value = location.lat;
+        document.getElementById("longitud").value = location.lng;
+        document.getElementById("direccion").value = location.direccion;
+        document.getElementById("titular").value = location.titular;
+        document.getElementById("cliente").value = location.cliente;
+        document.getElementById("sumin").value = location.sumin;
+      }
+    })
+    .catch((error) => {
+      console.error("Error al cargar los datos de la ubicación:", error);
+    });
+}
+
+// Carga el mapa al cargar la página
+window.addEventListener("load", initMap);

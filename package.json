@@ -1,7 +1,9 @@
 {
   "dependencies": {
+    "await": "^0.2.6",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "mssql": "^11.0.1",
     "mysql": "^2.18.1",
     "mysql2": "^3.11.5"
   }
