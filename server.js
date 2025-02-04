@@ -58,9 +58,7 @@ app.post("/update-location", async (req, res) => {
     USING (VALUES (@id, @lat, @lng)) AS source (SUM_CLIENTE, SUM_LATITUD, SUM_LONGITUD)
     ON target.SUM_CLIENTE = source.SUM_CLIENTE
     WHEN MATCHED THEN
-      UPDATE SET SUM_LATITUD = source.SUM_LATITUD, SUM_LONGITUD = source.SUM_LONGITUD
-    WHEN NOT MATCHED THEN
-      -- INSERT (SUM_CLIENTE, SUM_LATITUD, SUM_LONGITUD) VALUES (source.SUM_CLIENTE, source.SUM_LATITUD, source.SUM_LONGITUD);
+      UPDATE SET SUM_LATITUD = source.SUM_LATITUD, SUM_LONGITUD = source.SUM_LONGITUD;
   `;
   
   try {

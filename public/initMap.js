@@ -74,9 +74,6 @@ function initMap() {
 
             // Modal y datos en los inputs
             modal.style.display = "block";
-            // loadLocationData(SUM_CLIENTE);
-            // Modal y datos en los inputs
-            modal.style.display = "block";
             document.getElementById("latitud").value = locationData.lat;
             document.getElementById("longitud").value = locationData.lng;
             document.getElementById("direccion").value = locationData.direccion;
@@ -84,18 +81,6 @@ function initMap() {
             document.getElementById("cliente").value = locationData.cliente;
             document.getElementById("sumin").value = locationData.sumin;
 
-            confirmBtn.onclick = function () {
-              const newLat = parseFloat(document.getElementById("latitud").value);
-              const newLng = parseFloat(document.getElementById("longitud").value);
-
-              if (!isNaN(newLat) && !isNaN(newLng)) {
-                marker.setPosition({ lat: newLat, lng: newLng });
-                updateLocationInDatabase(SUM_CLIENTE, newLat, newLng);
-                modal.style.display = "none";
-              } else {
-                alert("Ubicación no válida");
-              }
-            };
 
             cancelBtn.onclick = closeModal;
             span.onclick = closeModal;
@@ -111,18 +96,27 @@ function initMap() {
             const newLat = marker.getPosition().lat();
             const newLng = marker.getPosition().lng();
 
-            
+            // Cargar los nuevos valores en el modal
             document.getElementById("latitud").value = newLat;
             document.getElementById("longitud").value = newLng;
+            document.getElementById("direccion").value = `${calle} ${altura}`;
+            document.getElementById("titular").value = CLI_TITULAR;
+            document.getElementById("cliente").value = SUM_CLIENTE;
+            document.getElementById("sumin").value = SUM_ID;
+
             modal.style.display = "block";
 
             confirmBtn.onclick = function () {
               if (!isNaN(newLat) && !isNaN(newLng)) {
-                marker.setPosition({ lat: newLat, lng: newLng });
+                // marker.setPosition({ lat: newLat, lng: newLng });
                 updateLocationInDatabase(SUM_CLIENTE, newLat, newLng);
+                
+                // Actualizar la posición del marcador sin crear uno nuevo
+                marker.setPosition({ lat: newLat, lng: newLng });
+                // // Actualizar las variables de posición
+                // originalLat = newLat;
+                // originalLng = newLng;
                 modal.style.display = "none";
-                originalLat = newLat;
-                originalLng = newLng;
               } else {
                 alert("Ubicación no válida");
               }
