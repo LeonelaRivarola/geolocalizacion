@@ -4,6 +4,7 @@ let markers = []; // Guardará todos los marcadores
 function initMap() {
   const urlParams = new URLSearchParams(window.location.search);
   const ruta = urlParams.get('ruta');
+  const singeo = urlParams.get('singeo');
 
   if (!ruta) {
     alert("El parámetro de ruta no está definido en la URL");
@@ -20,28 +21,27 @@ function initMap() {
   const confirmBtn = document.getElementById("confirmBtn");
   const cancelBtn = document.getElementById("cancelBtn");
 
+  //para el parametro singeo
+  let url = `/get-locations?ruta=${ruta}`;
+  if (singeo === '1'){
+    url += `&singeo=${singeo}`;
+  }
+
   // Obtener ubicaciones del servidor
-  fetch(`/get-locations?ruta=${ruta}`)
+  fetch(url)
     .then((response) => response.json())
     .then((data) => {
-      console.log("Datos obtenidos del servidor:", data);
-
       if (data.success) {
+        console.log("Ubicaciones obtenidas:", data.locations);
         data.locations.forEach((location) => {
           const { SUM_CLIENTE, SUM_ID, SUM_LATITUD, SUM_LONGITUD, SUM_CALLE, SUM_ALTURA, CLI_TITULAR } = location;
           const lat = parseFloat(SUM_LATITUD);
           const lng = parseFloat(SUM_LONGITUD);
 
-          // Si lat y lng son (0, 0), utilizar las coordenadas promedio LAT_DEF y LONG_DEF
-          if (lat === 0 && lng === 0) {
-            lat = parseFloat(LAT_DEF);
-            lng = parseFloat(LONG_DEF);
-          }
-
-          if (isNaN(lat) || isNaN(lng)) {
-            console.error(`Valores inválidos para lat o lng: lat: ${lat}, lng: ${lng}`);
-            return;
-          }
+          // if (isNaN(lat) || isNaN(lng)) {
+          //   console.error(`Valores inválidos para lat o lng: lat: ${lat}, lng: ${lng}`);
+          //   return;
+          // }
 
           const calle = SUM_CALLE.trim().replace(/\s+/g, " ");
           const altura = SUM_ALTURA ? SUM_ALTURA : '';
@@ -52,7 +52,7 @@ function initMap() {
             title: `${calle} ${altura} * ${CLI_TITULAR}`,
           });
 
-          markers.push(marker);
+          markers.push(marker); 
 
           const infoWindow = new google.maps.InfoWindow({
             content: `
@@ -73,7 +73,7 @@ function initMap() {
             const locationData = {
               lat: marker.getPosition().lat(),
               lng: marker.getPosition().lng(),
-              direccion: `${calle} ${altura}`,
+              direccion: `${calle} ${altura}`,  
               titular: CLI_TITULAR,
               cliente: SUM_CLIENTE,
               sumin: SUM_ID,
@@ -116,16 +116,9 @@ function initMap() {
 
             confirmBtn.onclick = function () {
               if (!isNaN(newLat) && !isNaN(newLng)) {
-                // marker.setPosition({ lat: newLat, lng: newLng });
-                // Si las nuevas coordenadas no son (0, 0), actualizamos en la base de datos
-                if (newLat !== 0 && newLng !== 0) {
-                  updateLocationInDatabase(SUM_CLIENTE, newLat, newLng);
-                }
-                // Actualizar la posición del marcador sin crear uno nuevo
+                updateLocationInDatabase(SUM_CLIENTE, newLat, newLng);
+                
                 marker.setPosition({ lat: newLat, lng: newLng });
-                // // Actualizar las variables de posición
-                // originalLat = newLat;
-                // originalLng = newLng;
                 modal.style.display = "none";
               } else {
                 alert("Ubicación no válida");
@@ -168,7 +161,6 @@ function updateLocationInDatabase(id, lat, lng) {
       console.error("Error al actualizar la ubicación:", error);
     });
 }
-
 
 
 // Cargar datos en el modal

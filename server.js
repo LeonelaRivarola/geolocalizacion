@@ -49,9 +49,9 @@ app.use(express.static("public"));
 app.post("/update-location", async (req, res) => {
   let { id, lat, lng } = req.body;
 
-  if (!id || isNaN(lat) || isNaN(lng)) {
-    return res.status(400).json({ success: false, message: "Datos no válidos para actualizar la ubicación" });
-  }
+  // if (!id || isNaN(lat) || isNaN(lng)) {
+  //   return res.status(400).json({ success: false, message: "Datos no válidos para actualizar la ubicación" });
+  // }
 
   const query = `
     MERGE INTO SUMINISTRO AS target
@@ -83,7 +83,7 @@ app.get("/get-location/:id", async (req, res) => {
   const locationId = req.params.id;
 
   // Consulta a la base de datos para obtener los detalles de la ubicación
-  const query = `
+  let query = `
     SELECT 
       SUM_CLIENTE AS cliente, 
       SUM_LATITUD AS lat, 
@@ -150,13 +150,13 @@ app.get("/test-query", async (req, res) => {
 // Ruta para obtener las ubicaciones de una ruta específica
 app.get('/get-locations', async (req, res) => {
   const ruta = req.query.ruta;  // Obtener el parámetro 'ruta' de la URL
-  const singeo = req.query.singeo === '1';
+  const singeo = req.query.singeo;
 
   if (!ruta) {
     return res.status(400).json({ error: 'Ruta es requerida' });
   }
 
-  // Consulta para obtener las ubicaciones
+
   let query = `
     SELECT 
       SUM_CLIENTE,
@@ -192,9 +192,9 @@ app.get('/get-locations', async (req, res) => {
       AND (SUM_FACTURABLE = 'S' OR STE_ESTADO_OPE = 46)
   `;
 
-  // Aquí cambiamos el filtro para que solo devuelva registros con latitud y longitud igual a cero
-  if (singeo) {
-    query += ' AND SUM_LATITUD = 0 AND SUM_LONGITUD = 0';  // Solo traer registros con latitud y longitud igual a cero
+  //si el parametro es 1 agregamos el filtro
+  if(singeo === '1'){
+    query += "AND (SUM_LATITUD = 0 OR SUM_LATITUD IS NULL)";
   }
 
   try {
