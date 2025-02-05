@@ -150,13 +150,14 @@ app.get("/test-query", async (req, res) => {
 // Ruta para obtener las ubicaciones de una ruta específica
 app.get('/get-locations', async (req, res) => {
   const ruta = req.query.ruta;  // Obtener el parámetro 'ruta' de la URL
+  const singeo = req.query.singeo === '1';
 
   if (!ruta) {
     return res.status(400).json({ error: 'Ruta es requerida' });
   }
 
-
-  const query = `
+  // Consulta para obtener las ubicaciones
+  let query = `
     SELECT 
       SUM_CLIENTE,
       SUM_ID,
@@ -188,9 +189,13 @@ app.get('/get-locations', async (req, res) => {
       JOIN CLIENTE ON SUM_CLIENTE = CLI_ID
     WHERE 
       ISNULL(SUM_RUTA, 0) = @ruta  -- Usamos el parámetro de la ruta
-      AND (SUM_FACTURABLE = 'S' OR STE_ESTADO_OPE = 46);
+      AND (SUM_FACTURABLE = 'S' OR STE_ESTADO_OPE = 46)
   `;
 
+  // Aquí cambiamos el filtro para que solo devuelva registros con latitud y longitud igual a cero
+  if (singeo) {
+    query += ' AND SUM_LATITUD = 0 AND SUM_LONGITUD = 0';  // Solo traer registros con latitud y longitud igual a cero
+  }
 
   try {
     const request = pool.request();
