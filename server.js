@@ -162,21 +162,21 @@ app.get("/test-query", async (req, res) => {
 });
 
 // Ruta para obtener las ubicaciones de una ruta específica
+// Ruta para obtener las ubicaciones de una ruta específica
 app.get('/get-locations', async (req, res) => {
   const ruta = req.query.ruta;  // Obtener el parámetro 'ruta' de la URL
-  const singeo = req.query.singeo;
+  const singeo = req.query.singeo; // Obtener el parámetro 'singeo' de la URL
 
   if (!ruta) {
     return res.status(400).json({ error: 'Ruta es requerida' });
   }
-
 
   let query = `
     SELECT 
       SUM_CLIENTE,
       SUM_ID,
       SUM_LATITUD,
-      SUM_LONGITUD ,
+      SUM_LONGITUD,
       LEFT(
         RTRIM(LTRIM(SUM_CALLE)) 
         + ' ' + RTRIM(LTRIM(ISNULL(SUM_ALTURA, ''))) 
@@ -206,9 +206,11 @@ app.get('/get-locations', async (req, res) => {
       AND (SUM_FACTURABLE = 'S' OR STE_ESTADO_OPE = 46)
   `;
 
-  //si el parametro es 1 agregamos el filtro
-  if(singeo === '1'){
-    query += "AND (SUM_LATITUD = 0 OR SUM_LATITUD IS NULL)";
+  // Filtrar por las coordenadas dependiendo del valor de singeo
+  if (singeo === '0') {
+    query += ` AND (SUM_LATITUD IS NOT NULL AND SUM_LATITUD != 0) AND (SUM_LONGITUD IS NOT NULL AND SUM_LONGITUD != 0)`;
+  } else if (singeo === '1') {
+    query += ` AND (SUM_LATITUD IS NULL OR SUM_LATITUD = 0) AND (SUM_LONGITUD IS NULL OR SUM_LONGITUD = 0)`;
   }
 
   try {
