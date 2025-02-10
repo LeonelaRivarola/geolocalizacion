@@ -47,36 +47,51 @@ app.use(express.static("public"));
 
 // Ruta para actualizar la ubicación
 app.post("/update-location", async (req, res) => {
-  let { id, lat, lng } = req.body;
+  let { id, lat, lng, sumin } = req.body;
 
-  // if (!id || isNaN(lat) || isNaN(lng)) {
-  //   return res.status(400).json({ success: false, message: "Datos no válidos para actualizar la ubicación" });
-  // }
+  if (!id || isNaN(lat) || isNaN(lng)) {
+    return res.status(400).json({ success: false, message: "Datos no válidos para actualizar la ubicación" });
+  }
 
-  const query = `
-    MERGE INTO SUMINISTRO AS target
-    USING (VALUES (@id, @lat, @lng)) AS source (SUM_CLIENTE, SUM_LATITUD, SUM_LONGITUD)
-    ON target.SUM_CLIENTE = source.SUM_CLIENTE
-    WHEN MATCHED THEN
-      UPDATE SET SUM_LATITUD = source.SUM_LATITUD, SUM_LONGITUD = source.SUM_LONGITUD;
-  `;
+  // const query = `
+  //   MERGE INTO SUMINISTRO AS target
+  //   USING (VALUES (@id, @lat, @lng)) AS source (SUM_CLIENTE, SUM_LATITUD, SUM_LONGITUD)-- machear por cliente y numero de suministro, sum id en vez de lat long
+  //   ON target.SUM_CLIENTE = source.SUM_CLIENTE AND target.SUM_ID = source.SUM_ID
+  //   WHEN MATCHED THEN
+  //     UPDATE SET SUM_LATITUD = source.SUM_LATITUD, SUM_LONGITUD = source.SUM_LONGITUD;
+  // `;
   
+  const query = `UPDATE SUMINISTRO
+    SET SUM_LATITUD = @lat, SUM_LONGITUD = @lng
+    WHERE SUM_CLIENTE = @id AND SUM_ID = @sumin;`;
+
+  //   const query = `
+  //   MERGE INTO SUMINISTRO AS target
+  //   USING (VALUES (@id, @sumin)) AS source (SUM_CLIENTE, SUM_ID)
+  //   ON target.SUM_CLIENTE = source.SUM_CLIENTE AND target.SUM_ID = source.SUM_ID
+  //   WHEN MATCHED THEN
+  //     UPDATE SET SUM_LATITUD = @lat, SUM_LONGITUD = @lng;
+  // `;
+  console.log(`Enviando actualización para ID: ${id}, lat: ${lat}, lng: ${lng}, sumin: ${sumin}`);
+
   try {
     const request = pool.request();
     request.input("id", sql.Int, id);
     request.input("lat", sql.Float, lat);
     request.input("lng", sql.Float, lng);
+    request.input("sumin", sql.Int, sumin);
+
+    console.log(`Actualizando ubicación para ID: ${id}, lat: ${lat}, lng: ${lng}`);
 
     await request.query(query);
-    console.log(`Ubicación actualizada correctamente para el ID ${id}`);
+    console.log(`Ubicación actualizada correctamente para el ID ${id}`); // Agrega este log para confirmar
+
     res.json({ success: true, message: "Ubicación actualizada correctamente" });
   } catch (error) {
     console.error("Error al ejecutar la consulta:", error);
     res.status(500).json({ success: false, message: "Error al actualizar la ubicación" });
   }
 });
-
-
 
 // Ruta para obtener los datos de una ubicación específica
 app.get("/get-location/:id", async (req, res) => {
@@ -146,7 +161,6 @@ app.get("/test-query", async (req, res) => {
   }
 });
 
-
 // Ruta para obtener las ubicaciones de una ruta específica
 app.get('/get-locations', async (req, res) => {
   const ruta = req.query.ruta;  // Obtener el parámetro 'ruta' de la URL
@@ -208,6 +222,57 @@ app.get('/get-locations', async (req, res) => {
     res.status(500).json({ success: false, message: "Error al consultar las ubicaciones" });
   }
 });
+
+
+app.get('/get-route-coordinates', async (req, res) => {
+  const ruta = req.query.ruta;
+
+  if (!ruta) {
+    return res.status(400).json({ error: 'Ruta es requerida' });
+  }
+
+  const query = `
+    SELECT 
+      RUT_GRUPO, 
+      RUT_ID, 
+      RUT_DESCRIPCION,
+      (SELECT AVG(SUM_LATITUD) FROM SUMINISTRO WHERE SUM_RUTA = RUT_ID AND SUM_LATITUD <> 0) AS LAT_DEF,
+      (SELECT AVG(SUM_LONGITUD) FROM SUMINISTRO WHERE SUM_RUTA = RUT_ID AND SUM_LONGITUD <> 0) AS LONG_DEF
+    FROM RUTA 
+    WHERE RUT_ID = @ruta
+  `;
+
+  try {
+    const request = pool.request();
+    request.input("ruta", sql.Int, ruta); // Pasar el parámetro "ruta" como entero
+
+
+    const result = await request.query(query);
+
+    if (result.recordset.length > 0) {
+      let { LAT_DEF, LONG_DEF } = result.recordset[0];
+
+      // Verificar si LAT_DEF y LONG_DEF son números válidos
+      LAT_DEF = isNaN(LAT_DEF) ? 0 : LAT_DEF;
+      LONG_DEF = isNaN(LONG_DEF) ? 0 : LONG_DEF;
+
+      res.json({ success: true, latDef: LAT_DEF, lngDef: LONG_DEF });
+    } else {
+      res.status(404).json({ success: false, message: "Coordenadas no encontradas para la ruta" });
+    }
+  } catch (error) {
+    console.error("Error al ejecutar la consulta:", error);
+    res.status(500).json({ success: false, message: "Error al obtener las coordenadas de la ruta" });
+  }
+});
+
+
+
+
+
+
+
+
 
 
 
