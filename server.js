@@ -53,13 +53,6 @@ app.post("/update-location", async (req, res) => {
     return res.status(400).json({ success: false, message: "Datos no válidos para actualizar la ubicación" });
   }
 
-  // const query = `
-  //   MERGE INTO SUMINISTRO AS target
-  //   USING (VALUES (@id, @lat, @lng)) AS source (SUM_CLIENTE, SUM_LATITUD, SUM_LONGITUD)-- machear por cliente y numero de suministro, sum id en vez de lat long
-  //   ON target.SUM_CLIENTE = source.SUM_CLIENTE AND target.SUM_ID = source.SUM_ID
-  //   WHEN MATCHED THEN
-  //     UPDATE SET SUM_LATITUD = source.SUM_LATITUD, SUM_LONGITUD = source.SUM_LONGITUD;
-  // `;
   
   const query = `UPDATE SUMINISTRO
     SET SUM_LATITUD = @lat, SUM_LONGITUD = @lng
