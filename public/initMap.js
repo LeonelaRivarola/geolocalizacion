@@ -10,7 +10,8 @@ let newLat, newLng;
 function initMap() {
   const urlParams = new URLSearchParams(window.location.search);
   ruta = urlParams.get('ruta');
-  const singeo = urlParams.get('singeo');
+  singeo = urlParams.get('singeo');
+
 
   if (!ruta) {
     alert("El parámetro de ruta no está definido en la URL");
@@ -66,6 +67,21 @@ function initMap() {
     });
 
   function createMarker(lat, lng, calle, altura, titular, cliente, sumin) {
+    
+    // Si las coordenadas no son válidas, usar las de la ruta
+    if (isNaN(lat) || lat === 0 || isNaN(lng) || lng === 0) {
+      lat = rutaLat;
+      lng = rutaLng;
+    }
+
+    console.log("Coordenadas del marcador:", lat, lng);
+
+    if (isNaN(rutaLat) || isNaN(rutaLng)) {
+      alert("Las coordenadas de la ruta no son válidas.");
+      return;
+  }
+    
+
     // Crear el marcador solo si no existe ya uno para esa ubicación
     let existingMarker = markers.find(marker => {
       return marker.position.lat() === lat && marker.position.lng() === lng;
@@ -76,7 +92,7 @@ function initMap() {
       return;
     }
 
-    
+
 
     const marker = new google.maps.Marker({
       position: { lat, lng },
@@ -241,7 +257,7 @@ function initMap() {
       if (data.success) {
         rutaLat = data.latDef;
         rutaLng = data.lngDef;
-        console.log("Coordenadas de ruta obtenidas: ", rutaLat, rutaLng);
+        
         // loadLocations();  // Después de obtener las coordenadas, cargar las ubicaciones
       } else {
         console.error("Error al obtener las coordenadas de la ruta");

@@ -72,7 +72,7 @@ app.post("/update-location", async (req, res) => {
   //   WHEN MATCHED THEN
   //     UPDATE SET SUM_LATITUD = @lat, SUM_LONGITUD = @lng;
   // `;
-  console.log(`Enviando actualización para ID: ${id}, lat: ${lat}, lng: ${lng}, sumin: ${sumin}`);
+  console.log(`Enviando actualización para cliente: ${id}, sumin: ${sumin}, lat: ${lat}, lng: ${lng}`);
 
   try {
     const request = pool.request();
@@ -81,10 +81,10 @@ app.post("/update-location", async (req, res) => {
     request.input("lng", sql.Float, lng);
     request.input("sumin", sql.Int, sumin);
 
-    console.log(`Actualizando ubicación para ID: ${id}, lat: ${lat}, lng: ${lng}`);
+    console.log(`Actualizando ubicación para cliente: ${id}, sumin: ${sumin}, lat: ${lat}, lng: ${lng}`);
 
     await request.query(query);
-    console.log(`Ubicación actualizada correctamente para el ID ${id}`); // Agrega este log para confirmar
+    console.log(`Ubicación actualizada correctamente para cliente: ${id}, sumin: ${sumin}`); // Agrega este log para confirmar
 
     res.json({ success: true, message: "Ubicación actualizada correctamente" });
   } catch (error) {
@@ -267,13 +267,6 @@ app.get('/get-route-coordinates', async (req, res) => {
     res.status(500).json({ success: false, message: "Error al obtener las coordenadas de la ruta" });
   }
 });
-
-
-
-
-
-
-
 
 
 
