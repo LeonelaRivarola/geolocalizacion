@@ -1,80 +1,118 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Intranet CORPICO</title>
-    <style>
-        body {
-            background-color: #f0f0f0; /* Gris claro */
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #333; /* Gris oscuro */
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
-        }
-        header img {
-            width: 50px; /* Ajusta el tamaño del logo */
-            margin-right: 20px;
-        }
-        header h1 {
-            font-size: 24px;
-            font-weight: bold;
-        }
-        .section {
-            padding: 20px;
-            margin: 15px;
-            background-color: #ffffff; /* Fondo blanco para las secciones */
-            border-radius: 8px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .section h2 {
-            font-size: 20px;
-            color: #333; /* Gris oscuro para los títulos de sección */
-        }
-        .button {
-            background-color: #4CAF50; /* Verde para los botones */
-            color: white;
-            padding: 10px 20px;
-            text-align: center;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
-        }
-        .button:hover {
-            background-color: #45a049; /* Cambio de color al pasar el mouse */
-        }
-    </style>
+    <link rel="stylesheet" href="inicio.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
 
 <header>
-    <img src="logo.png" alt="CORPICO Logo"> <!-- Asegúrate de colocar la ruta correcta de tu logo -->
-    <h1>Intranet CORPICO</h1>
+    <img src="logo.png" alt="CORPICO Logo"> 
+    <h1><em>&nbsp;Intranet&nbsp; CORPICO</em></h1>
 </header>
 
-<div class="section" style="background-color: #e3f2fd;"> <!-- Sección con fondo azul claro -->
+<div class="section">
     <h2>Bienvenido a la Intranet</h2>
     <p>Información y herramientas corporativas disponibles para los empleados de CORPICO.</p>
     <a href="#" class="button">Explorar</a>
 </div>
 
-<div class="section" style="background-color: #fff3e0;"> <!-- Sección con fondo naranja claro -->
+<div class="section " style="background-color: #fff3e0;"> 
     <h2>Recursos</h2>
     <p>Accede a los recursos internos y archivos importantes.</p>
     <a href="mapa.html" class="button">Acceder</a>
 </div>
 
-<div class="section" style="background-color: #c8e6c9;"> <!-- Sección con fondo verde claro -->
+<div class="section" style="background-color: #c8e6c9;"> 
     <h2>Soporte</h2>
     <p>Obtén ayuda y soporte técnico para resolver cualquier problema.</p>
     <a href="#" class="button">Contactar Soporte</a>
 </div>
-
+<div class="color-table">
+    <table style="width:100%; height:8px;">
+        <tbody></tbody>
+        <tbody>
+            <tr>
+                <td style="background:#3e64ac"></td>
+                <td style="background:#712d85"></td>
+                <td style="background:#e22b14"></td>
+                <td style="background:#ea672e"></td>
+                <td style="background:#ffda1f"></td>
+                <td style="background:#35ac75"></td>
+                <td style="background:#5fc3e6"></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
 </body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intranet CORPICO</title>
+  <link rel="stylesheet" href="inicio.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Color Table -->
+  <div class="color-table">
+    <table>
+      <tbody></tbody>
+      <tbody>
+        <tr>
+          <td style="background:#3e64ac"></td>
+          <td style="background:#712d85"></td>
+          <td style="background:#e22b14"></td>
+          <td style="background:#ea672e"></td>
+          <td style="background:#ffda1f"></td>
+          <td style="background:#35ac75"></td>
+          <td style="background:#5fc3e6"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Navbar -->
+  <nav id="mainNavBar" class="navbar navbar-expand-lg navbar-light">
+    <div class="container">
+      <a class="navbar-brand" href="/">
+        <img src="logo.png" alt="CORPICO Logo">
+        <h1><em>&nbsp;Intranet&nbsp; CORPICO</em></h1>
+      </a>
+      <!-- Toggler for mobile -->
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <!-- Navbar Links -->
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#">Inicio</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Salir</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+
+
+
+
+  
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
 </html>
