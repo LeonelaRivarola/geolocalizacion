@@ -52,7 +52,6 @@ app.post("/update-location", async (req, res) => {
   if (!id || isNaN(lat) || isNaN(lng)) {
     return res.status(400).json({ success: false, message: "Datos no válidos para actualizar la ubicación" });
   }
-
   
   const query = `UPDATE SUMINISTRO
     SET SUM_LATITUD = @lat, SUM_LONGITUD = @lng
@@ -80,8 +79,9 @@ app.post("/update-location", async (req, res) => {
 });
 
 // Ruta para obtener los datos de una ubicación específica
-app.get("/get-location/:id", async (req, res) => {
-  const locationId = req.params.id;
+app.get("/get-location/:idcli/:idsum", async (req, res) => {
+  const locIdCli = req.params.idcli;
+  const locIdSum = req.params.idsum
 
   // Consulta a la base de datos para obtener los detalles de la ubicación
   let query = `
@@ -110,7 +110,7 @@ app.get("/get-location/:id", async (req, res) => {
       SUM_ID AS sumin
     FROM SUMINISTRO
     JOIN CLIENTE ON SUM_CLIENTE = CLI_ID
-    WHERE SUM_CLIENTE = @locationId;
+    WHERE SUM_CLIENTE = @locIdCli and SUM_ID = @locIdSum;
   `;
 
   try {
@@ -147,8 +147,6 @@ app.get("/test-query", async (req, res) => {
   }
 });
 
-// Ruta para obtener las ubicaciones de una ruta específica
-// Ruta para obtener las ubicaciones de una ruta específica
 app.get('/get-locations', async (req, res) => {
   const ruta = req.query.ruta;  // Obtener el parámetro 'ruta' de la URL
   const singeo = req.query.singeo; // Obtener el parámetro 'singeo' de la URL
@@ -180,13 +178,17 @@ app.get('/get-locations', async (req, res) => {
       CLI_TITULAR,
       SUM_CALLE,
       SUM_ALTURA,
+      SUM_ANEXO,
       LOC_DESCRIPCION,
-      SUM_ORDEN_LECTURA
+      SUM_ORDEN_LECTURA,
+      LAT_DEF,
+      LONG_DEF
     FROM 
       SUMINISTRO
       JOIN SUMINISTRO_TIPO_EMPRESA ON STE_CLIENTE = SUM_CLIENTE AND STE_SUMINISTRO = SUM_ID AND STE_TIPO_EMPRESA = 3
       JOIN LOCALIDAD ON LOC_ID = SUM_LOCALIDAD
       JOIN CLIENTE ON SUM_CLIENTE = CLI_ID
+      JOIN RUTAS_CENTRO_GEOGRAFICO ON RUT_GRUPO = ISNULL(SUM_GRUPO,0) AND RUT_ID = ISNULL(SUM_RUTA,0)
     WHERE 
       ISNULL(SUM_RUTA, 0) = @ruta  -- Usamos el parámetro de la ruta
       AND (SUM_FACTURABLE = 'S' OR STE_ESTADO_OPE = 46)
@@ -205,6 +207,7 @@ app.get('/get-locations', async (req, res) => {
 
     const result = await request.query(query);
     res.json({ success: true, locations: result.recordset });
+    console.log(new Date().toLocaleString().slice(0,24) + ` -- Consulta de ruta ${ruta} finalizada OK`);
   } catch (err) {
     console.error("Error al ejecutar la consulta:", err);
     res.status(500).json({ success: false, message: "Error al consultar las ubicaciones" });

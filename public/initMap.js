@@ -1,6 +1,6 @@
 let currentInfoWindow = null;
-let markers = []; // Guardará todos los marcadores
-let modal, span, confirmBtn, cancelBtn; // Declaramos modal, span, confirmBtn y cancelBtn fuera de initMap
+let markers = []; 
+let modal, span, confirmBtn, cancelBtn; 
 let ruta = null;
 let singeo = null;
 let rutaLat = null;
@@ -34,30 +34,38 @@ function initMap() {
     url += `&singeo=${singeo}`;
   }
 
+  let lngInc = 0;
+  let noGeo = 0;
   fetch(url)
     .then(response => response.json())
     .then(data => {
       if (data.success) {
         console.log("Ubicaciones obtenidas:", data.locations);
         data.locations.forEach(location => {
-          const { SUM_CLIENTE, SUM_ID, SUM_LATITUD, SUM_LONGITUD, SUM_CALLE, SUM_ALTURA, CLI_TITULAR } = location;
+          const { SUM_CLIENTE, SUM_ID, SUM_LATITUD, SUM_LONGITUD, SUM_CALLE, SUM_ALTURA, SUM_ANEXO, CLI_TITULAR, LAT_DEF, LONG_DEF } = location;
 
           let lat = parseFloat(SUM_LATITUD);
           let lng = parseFloat(SUM_LONGITUD);
+          //console.log("ubicacion " + lat + " " + lng)
+          rutaLat = parseFloat(LAT_DEF)
+          rutaLng = parseFloat(LONG_DEF) 
 
+          noGeo = 0
+          if (isNaN(lat) || lat === 0 || isNaN(lng) || lng === 0) {
+              lat = rutaLat
+              lng = rutaLng + (0.0002 * lngInc)
+              lngInc = lngInc + 1
+              //console.log("se asigno pos centro ruta " + lat + " " + lng)
+              noGeo = 1
+          }
           const calle = SUM_CALLE.trim().replace(/\s+/g, " ");
           const altura = SUM_ALTURA ? SUM_ALTURA : '';
+          const anexo = SUM_ANEXO ? SUM_ANEXO : '';
+          createMarker(lat, lng, calle, altura, anexo, CLI_TITULAR, SUM_CLIENTE, SUM_ID,noGeo);
 
-          // Si el singeo es 1, filtramos para que solo aparezcan los que no tienen coordenadas
-          if (singeo === '1' && (isNaN(lat) || lat === 0 || isNaN(lng) || lng === 0)) {
-            // Crear un marcador solo si las coordenadas son nulas o 0
-            createMarker(lat, lng, calle, altura, CLI_TITULAR, SUM_CLIENTE, SUM_ID);
-          } else if (singeo === '0' && !isNaN(lat) && lat !== 0 && !isNaN(lng) && lng !== 0) {
-            // Si singeo es 0, solo mostrar marcadores con coordenadas válidas
-            createMarker(lat, lng, calle, altura, CLI_TITULAR, SUM_CLIENTE, SUM_ID);
-          }
 
-        });
+        });  //end data success
+        map.setCenter({lat: rutaLat, lng: rutaLng});        
       } else {
         console.error("Error al obtener las ubicaciones del servidor");
       }
@@ -66,20 +74,7 @@ function initMap() {
       console.error("Error al cargar las ubicaciones:", error);
     });
 
-  function createMarker(lat, lng, calle, altura, titular, cliente, sumin) {
-    
-    // Si las coordenadas no son válidas, usar las de la ruta
-    if (isNaN(lat) || lat === 0 || isNaN(lng) || lng === 0) {
-      lat = rutaLat;
-      lng = rutaLng;
-    }
-
-    console.log("Coordenadas del marcador:", lat, lng);
-
-    if (isNaN(rutaLat) || isNaN(rutaLng)) {
-      alert("Las coordenadas de la ruta no son válidas.");
-      return;
-  }
+  function createMarker(lat, lng, calle, altura, anexo, titular, cliente, sumin,noGeo) {
     
 
     // Crear el marcador solo si no existe ya uno para esa ubicación
@@ -92,13 +87,75 @@ function initMap() {
       return;
     }
 
+    let mescala = 8
+    let mcolor = '#D35400'  //default suministro de cliente
+    let mcontorno = '#454545'
 
+    if (noGeo == 1)
+    {
+      mescala = 12;
+      mcolor = '#000000';
+      mcontorno = '#FFFF00';
+    }
+    else
+    { 
+    switch(true)    {
+      case (anexo == 'COLUMNA AP'): {
+        mescala = 8;
+        mcolor = '#3864E2';
+        break;
+      }
+      case (anexo == 'CENTRO CALLE AP'): {
+        mescala = 8;
+        mcolor = '#3498DB';
+        break;
+      }
+      case (anexo.includes('ORNAMENTAL')): {
+        mescala = 8;
+        mcolor = '#AED6F1';
+        break;
+      }
+      case (anexo == 'TABLERO SE' && titular.includes('der') ): {
+        mescala = 8;
+        mcolor = '#FFC0CB';
+        break;
+      }
+      case (anexo == 'TABLERO SE' && titular.includes('dist') ): {
+        mescala = 8;
+        mcolor = '#800080';
+        break;
+      }  
+      case (anexo == 'CAPACITOR SE'): {
+        mescala = 10;
+        mcolor = '#808080';
+        break;
+      }           
+      case (anexo.includes('LINEA') && titular.includes('/D')): {
+        mescala = 10;
+        mcolor = '#008000';
+        break;
+      }   
+      case (anexo == 'SUBESTACION SE'): {
+        mescala = 10;
+        mcolor = '#F4D03F';
+        break;
+      }         
+    }
+    }
 
     const marker = new google.maps.Marker({
       position: { lat, lng },
       map,
       draggable: true,
       title: `${calle} ${altura} * ${titular}`,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: mescala,
+        fillColor: mcolor,   
+        fillOpacity: 1,
+        strokeWeight: 2,
+        strokeColor: mcontorno
+      }
     });
 
     markers.push(marker); // Solo se agrega el marcador a la lista de marcadores si es nuevo
@@ -230,8 +287,8 @@ function initMap() {
       });
   }
 
-  function loadLocationData(id) {
-    fetch(`/get-location/${id}`)
+  function loadLocationData(idCli,idSum) {
+    fetch(`/get-location/${idCli}/${idSum}`)
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
@@ -251,13 +308,13 @@ function initMap() {
 
 
   // Obtener las coordenadas promedio de la ruta
-  fetch(`/get-route-coordinates?ruta=${ruta}`)
+/*   fetch(`/get-route-coordinates?ruta=${ruta}`)
     .then(response => response.json())
     .then(data => {
       if (data.success) {
         rutaLat = data.latDef;
         rutaLng = data.lngDef;
-        
+        console.log("coordenadas centro de ruta: " +  rutaLat + " " + rutaLng)
         // loadLocations();  // Después de obtener las coordenadas, cargar las ubicaciones
       } else {
         console.error("Error al obtener las coordenadas de la ruta");
@@ -265,7 +322,7 @@ function initMap() {
     })
     .catch(error => {
       console.error("Error al cargar las coordenadas de la ruta: ", error)
-    });
+    }); */
 }
 
 // Carga el mapa al cargar la página
