@@ -58,13 +58,6 @@ app.post("/update-location", async (req, res) => {
     SET SUM_LATITUD = @lat, SUM_LONGITUD = @lng
     WHERE SUM_CLIENTE = @id AND SUM_ID = @sumin;`;
 
-  //   const query = `
-  //   MERGE INTO SUMINISTRO AS target
-  //   USING (VALUES (@id, @sumin)) AS source (SUM_CLIENTE, SUM_ID)
-  //   ON target.SUM_CLIENTE = source.SUM_CLIENTE AND target.SUM_ID = source.SUM_ID
-  //   WHEN MATCHED THEN
-  //     UPDATE SET SUM_LATITUD = @lat, SUM_LONGITUD = @lng;
-  // `;
   console.log(`Enviando actualización para cliente: ${id}, sumin: ${sumin}, lat: ${lat}, lng: ${lng}`);
 
   try {
