@@ -1,192 +1,272 @@
+let currentInfoWindow = null;
+let markers = []; // Guardará todos los marcadores
+let modal, span, confirmBtn, cancelBtn; // Declaramos modal, span, confirmBtn y cancelBtn fuera de initMap
+let ruta = null;
+let singeo = null;
+let rutaLat = null;
+let rutaLng = null;
+let newLat, newLng;
+
 function initMap() {
   const urlParams = new URLSearchParams(window.location.search);
-  const ruta = urlParams.get('ruta');
+  ruta = urlParams.get('ruta');
+  singeo = urlParams.get('singeo');
+
 
   if (!ruta) {
     alert("El parámetro de ruta no está definido en la URL");
     return;
   }
 
-  var map = new google.maps.Map(document.getElementById('map'), {
+  const map = new google.maps.Map(document.getElementById('map'), {
     center: { lat: -35.663185, lng: -63.761511 },
-    zoom: 20
+    zoom: 15,
   });
 
-  var modal = document.getElementById("locationModal");
-  var span = document.getElementsByClassName("close")[0];
-  var confirmBtn = document.getElementById("confirmBtn");
-  var cancelBtn = document.getElementById("cancelBtn");
+  modal = document.getElementById("locationModal");
+  span = document.getElementsByClassName("close")[0];
+  confirmBtn = document.getElementById("confirmBtn");
+  cancelBtn = document.getElementById("cancelBtn");
 
-  //ubicación desde el servidor
-  fetch(`/get-locations?ruta=${ruta}`)
+  //para el parametro singeo
+  let url = `/get-locations?ruta=${ruta}`;
+  if (singeo === '1') {
+    url += `&singeo=${singeo}`;
+  }
+
+  fetch(url)
     .then(response => response.json())
     .then(data => {
       if (data.success) {
+        console.log("Ubicaciones obtenidas:", data.locations);
         data.locations.forEach(location => {
-          let { SUM_CLIENTE, SUM_ID, SUM_LATITUD, SUM_LONGITUD, SUM_CALLE, CLI_TITULAR } = location;
-          const lat = parseFloat(SUM_LATITUD);
-          const lng = parseFloat(SUM_LONGITUD);
+          const { SUM_CLIENTE, SUM_ID, SUM_LATITUD, SUM_LONGITUD, SUM_CALLE, SUM_ALTURA, CLI_TITULAR } = location;
 
-          if (isNaN(lat) || isNaN(lng)) {
-            console.error(`Valores inválidos para lat o lng: lat: ${lat}, lng: ${lng}`);
-            return;
+          let lat = parseFloat(SUM_LATITUD);
+          let lng = parseFloat(SUM_LONGITUD);
+
+          const calle = SUM_CALLE.trim().replace(/\s+/g, " ");
+          const altura = SUM_ALTURA ? SUM_ALTURA : '';
+
+          // Si el singeo es 1, filtramos para que solo aparezcan los que no tienen coordenadas
+          if (singeo === '1' && (isNaN(lat) || lat === 0 || isNaN(lng) || lng === 0)) {
+            // Crear un marcador solo si las coordenadas son nulas o 0
+            createMarker(lat, lng, calle, altura, CLI_TITULAR, SUM_CLIENTE, SUM_ID);
+          } else if (singeo === '0' && !isNaN(lat) && lat !== 0 && !isNaN(lng) && lng !== 0) {
+            // Si singeo es 0, solo mostrar marcadores con coordenadas válidas
+            createMarker(lat, lng, calle, altura, CLI_TITULAR, SUM_CLIENTE, SUM_ID);
           }
 
-          var marker = new google.maps.Marker({
-            position: { lat: lat, lng: lng },
-            map: map,
-            draggable: true,
-            title: 'Domicilio del Cliente',
-            id: SUM_ID
-          });
-
-          var infoWindow = new google.maps.InfoWindow({
-            content: `
-              <div>
-                <strong>${CLI_TITULAR}</strong><br>
-                Dirección: ${SUM_CALLE}<br>
-                Lat: ${lat} - Lng: ${lng}
-              </div>
-            `
-          });
-
-          let currentInfoWindow = null;
-
-          marker.addListener('click', function () {
-            if (currentInfoWindow) {
-              currentInfoWindow.close();
-            }
-            infoWindow.open(map, marker);
-            currentInfoWindow = infoWindow;
-
-            //modal y datos en los inputs
-            modal.style.display = "block";
-            loadLocationData(marker.id);  
-
-            // Modificar
-            confirmBtn.onclick = function () {
-              var newLat = parseFloat(document.getElementById("latitud").value);
-              var newLng = parseFloat(document.getElementById("longitud").value);
-
-              if (!isNaN(newLat) && !isNaN(newLng)) {
-
-                // nueva pos
-                marker.setPosition({ lat: newLat, lng: newLng });
-                //Actualiza
-                updateLocationInDatabase(marker.id, newLat, newLng);
-                modal.style.display = "none";
-
-              } else {
-                alert("Ubicación no válida");
-              }
-            };
-
-            //cancelar
-            cancelBtn.onclick = function () {
-              modal.style.display = "none";
-            };
-
-            // Cerrar 'x'
-            span.onclick = function () {
-              modal.style.display = "none";
-            };
-
-            // Cerrar 'Escape'
-            window.addEventListener("keydown", function (event) {
-              if (event.key === "Escape") {
-                modal.style.display = "none";
-              }
-            });
-          });
-
-          // Función para cargar los datos de la ubicación en el modal
-          function loadLocationData(id) {
-            fetch(`/get-location/${id}`)
-              .then(response => response.json())
-              .then(data => {
-                if (data.success) {
-                  const location = data.location;
-                  document.getElementById("latitud").value = location.lat;
-                  document.getElementById("longitud").value = location.lng;
-                  document.getElementById("direccion").value = location.direccion;
-                  document.getElementById("titular").value = location.titular;
-                  document.getElementById("cliente").value = location.cliente;
-                  document.getElementById("sumin").value = location.sumin;
-                }
-              })
-              .catch(error => {
-                console.error('Error al cargar los datos de la ubicación:', error)
-              });
-          }
-
-          //actualizar la ubicación en la base de datos
-          function updateLocationInDatabase(id, lat, lng) {
-            fetch('/update-location', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: id, lat: lat, lng: lng })
-            })
-              .then(response => response.json())
-              .then(data => {
-                console.log('Ubicación actualizada:', data);
-              })
-              .catch(error => {
-                console.error('Error al actualizar la ubicación:', error);
-              });
-          }
-
-
-          let previousLat = marker.getPosition().lat(); // latitud original
-          let previousLng = marker.getPosition().lng(); // longitud original
-
-          // marcador es arrastrado
-          marker.addListener('dragend', function () {
-            const newLat = marker.getPosition().lat();
-            const newLng = marker.getPosition().lng();
-
-
-            // inputs del modal con las nuevas coordenadas
-            document.getElementById("latitud").value = newLat;
-            document.getElementById("longitud").value = newLng;
-
-            console.log("lat y lon de el arrastre", document.getElementById("latitud").value, document.getElementById("longitud").value)
-            //modal se abre
-            modal.style.display = "block";
-            loadLocationData(marker.id);
-            //funcion del boton confirmar
-            confirmBtn.onclick = function () {
-
-              console.log("lat y lon de el arrastre en el confirmar", newLat, newLng)
-
-              if (!isNaN(newLat) && !isNaN(newLng)) {
-                marker.setPosition({ lat: newLat, lng: newLng });
-                updateLocationInDatabase(marker.id, newLat, newLng);
-
-                modal.style.display = "none";
-                
-                previousLat = newLat;
-                previousLng = newLng;
-              } else {
-                alert("Ubicación no válida");
-              }
-            };
-
-            // Cancelar el modal
-            cancelBtn.onclick = function () {
-              // Restaurar 
-              modal.style.display = "none";
-              marker.setPosition({ lat: previousLat, lng: previousLng });
-            };
-          });
         });
       } else {
-        console.error('Error al obtener las ubicaciones del servidor');
+        console.error("Error al obtener las ubicaciones del servidor");
+      }
+    })
+    .catch((error) => {
+      console.error("Error al cargar las ubicaciones:", error);
+    });
+
+  function createMarker(lat, lng, calle, altura, titular, cliente, sumin) {
+    
+    // Si las coordenadas no son válidas, usar las de la ruta
+    if (isNaN(lat) || lat === 0 || isNaN(lng) || lng === 0) {
+      lat = rutaLat;
+      lng = rutaLng;
+    }
+
+    console.log("Coordenadas del marcador:", lat, lng);
+
+    if (isNaN(rutaLat) || isNaN(rutaLng)) {
+      alert("Las coordenadas de la ruta no son válidas.");
+      return;
+  }
+    
+
+    // Crear el marcador solo si no existe ya uno para esa ubicación
+    let existingMarker = markers.find(marker => {
+      return marker.position.lat() === lat && marker.position.lng() === lng;
+    });
+
+    if (existingMarker) {
+      // Si el marcador ya existe, no crees uno nuevo, solo actualiza la posición
+      return;
+    }
+
+
+
+    const marker = new google.maps.Marker({
+      position: { lat, lng },
+      map,
+      draggable: true,
+      title: `${calle} ${altura} * ${titular}`,
+    });
+
+    markers.push(marker); // Solo se agrega el marcador a la lista de marcadores si es nuevo
+
+    const infoWindow = new google.maps.InfoWindow({
+      content: `  
+              <div>
+                  <strong>${titular}</strong><br>
+                  Dirección: ${calle} ${altura}<br>
+                  Lat: ${lat} - Lng: ${lng}
+              </div>
+          `,
+    });
+
+    marker.addListener("click", function () {
+      console.log(`Clic en marcador ID: ${sumin}, Cliente: ${cliente}`);
+      const locationData = {
+        lat: marker.getPosition().lat(),
+        lng: marker.getPosition().lng(),
+        direccion: `${calle} ${altura}`,
+        titular: titular,
+        cliente: cliente,
+        sumin: sumin,
+        marker: marker
+      };
+      newLat = locationData.lat;
+      newLng = locationData.lng;
+      openModal(locationData);
+    });
+
+    marker.addListener("dragend", function () {
+      const newLat = marker.getPosition().lat();
+      const newLng = marker.getPosition().lng();
+
+      console.log("Nueva latitud:", newLat, "Nueva longitud:", newLng);
+
+      document.getElementById("latitud").value = newLat;
+      document.getElementById("longitud").value = newLng;
+
+      // Si el modal ya está abierto, actualizamos los valores
+      if (modal.style.display === "block") {
+        document.getElementById("latitud").value = newLat;
+        document.getElementById("longitud").value = newLng;
+      } else {
+        // Si el modal no está abierto, lo mostramos con los nuevos valores
+        const locationData = {
+          lat: newLat,
+          lng: newLng,
+          direccion: `${calle} ${altura}`,
+          titular: titular,
+          cliente: cliente,
+          sumin: sumin,
+          marker: marker
+        };
+        openModal(locationData);
+      }
+    });
+
+    marker.originalLat = marker.getPosition().lat();
+    marker.originalLng = marker.getPosition().lng();
+  }
+
+
+  function closeModal(marker) {
+    // Usa las coordenadas originales almacenadas en el marcador
+    marker.setPosition({ lat: marker.originalLat, lng: marker.originalLng });
+    modal.style.display = "none";
+  }
+
+  function openModal(locationData) {
+    modal.style.display = "block";
+
+    // Rellenar los campos del modal con los datos del marcador
+    document.getElementById("latitud").value = locationData.lat;
+    document.getElementById("longitud").value = locationData.lng;
+    document.getElementById("direccion").value = locationData.direccion;
+    document.getElementById("titular").value = locationData.titular;
+    document.getElementById("cliente").value = locationData.cliente;
+    document.getElementById("sumin").value = locationData.sumin;
+
+    const marker = locationData.marker;
+
+    confirmBtn.onclick = function () {
+      newLat = parseFloat(document.getElementById("latitud").value);
+      newLng = parseFloat(document.getElementById("longitud").value);
+
+      if (!isNaN(newLat) && !isNaN(newLng)) {
+        updateLocationInDatabase(locationData.cliente, newLat, newLng, locationData.sumin);  // Usa locationData.cliente
+        marker.setPosition({ lat: newLat, lng: newLng });
+        modal.style.display = "none";
+      } else {
+        alert("Ubicación no válida");
+      }
+    };
+
+    cancelBtn.onclick = function () {
+      closeModal(marker);
+    };
+    span.onclick = function () {
+      closeModal(marker);
+    };
+    window.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeModal(marker);
+    });
+  }
+
+
+  // Función para actualizar la ubicación en la base de datos
+  function updateLocationInDatabase(cliente, lat, lng, sumin) {
+    console.log(`Enviando actualización para ID: ${cliente}, lat: ${lat}, lng: ${lng}, sumin: ${sumin}`);
+
+    fetch("/update-location", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: cliente,
+        lat: lat,
+        lng: lng,
+        sumin: sumin
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Ubicación actualizada:", data);
+        // loadLocations(); // Recargar las ubicaciones después de la actualización
+      })
+      .catch((error) => {
+        console.error("Error al actualizar la ubicación:", error);
+      });
+  }
+
+  function loadLocationData(id) {
+    fetch(`/get-location/${id}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          const location = data.location;
+          document.getElementById("latitud").value = location.lat;
+          document.getElementById("longitud").value = location.lng;
+          document.getElementById("direccion").value = location.direccion;
+          document.getElementById("titular").value = location.titular;
+          document.getElementById("cliente").value = location.cliente;
+          document.getElementById("sumin").value = location.sumin;
+        }
+      })
+      .catch((error) => {
+        console.error("Error al cargar los datos de la ubicación:", error);
+      });
+  }
+
+
+  // Obtener las coordenadas promedio de la ruta
+  fetch(`/get-route-coordinates?ruta=${ruta}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        rutaLat = data.latDef;
+        rutaLng = data.lngDef;
+        
+        // loadLocations();  // Después de obtener las coordenadas, cargar las ubicaciones
+      } else {
+        console.error("Error al obtener las coordenadas de la ruta");
       }
     })
     .catch(error => {
-      console.error('Error al cargar las ubicaciones:', error);
+      console.error("Error al cargar las coordenadas de la ruta: ", error)
     });
 }
 
-// Inicializa el mapa
-google.maps.event.addDomListener(window, 'load', initMap);
+// Carga el mapa al cargar la página
+window.addEventListener("load", initMap);
