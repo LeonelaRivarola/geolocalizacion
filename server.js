@@ -45,6 +45,26 @@ app.use(express.json());
 // Servir archivos estáticos (tu HTML y otros archivos)
 app.use(express.static("public"));
 
+// Ruta para la página de inicio
+app.get("/GeolocalizarMapa", (req, res) => {
+  res.sendFile(__dirname + "/public/geolocalizar.html"); // Asegúrate de que geolocalizar.html esté en la carpeta "public"
+});
+
+app.get("/GeolocalizarRutas", (req, res) => {
+   res.sendFile(__dirname + "/public/RutasGeolocalizacion.html");
+});
+
+
+app.get("/GeolocalizarSup", (req, res) => {
+  res.sendFile(__dirname + "/public/SupGeolocalizacion.html"); // Asegúrate de que geolocalizar.html esté en la carpeta "public"
+});
+
+app.get("/GeolocalizarRutasMapa", (req, res) => {
+  const { ruta, singeo } = req.query;
+  console.log(ruta, singeo);
+  res.sendFile(__dirname + "/public/index.html");
+});
+
 // Ruta para actualizar la ubicación
 app.post("/update-location", async (req, res) => {
   let { id, lat, lng, sumin } = req.body;
