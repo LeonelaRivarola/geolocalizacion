@@ -2,6 +2,7 @@ let currentInfoWindow = null;
 let markers = []; 
 let modal, span, confirmBtn, cancelBtn; 
 let ruta = null;
+let nsup = null;
 let singeo = null;
 let rutaLat = null;
 let rutaLng = null;
@@ -10,13 +11,19 @@ let newLat, newLng;
 function initMap() {
   const urlParams = new URLSearchParams(window.location.search);
   ruta = urlParams.get('ruta');
+  nsup = urlParams.get('nsup')
   singeo = urlParams.get('singeo');
 
 
-  if (!ruta) {
-    alert("El parámetro de ruta no está definido en la URL");
+  if (!ruta && !nsup) {
+    alert(`El parámetro de ruta = ${ruta} o nsup = ${nsup} no está definido en la URL`);
     return;
   }
+  if (ruta && nsup) {
+    alert("El parámetro de ruta y nsup son de opcion excluyente");
+    return;
+  }
+
 
   const map = new google.maps.Map(document.getElementById('map'), {
     center: { lat: -35.663185, lng: -63.761511 },
@@ -28,11 +35,23 @@ function initMap() {
   confirmBtn = document.getElementById("confirmBtn");
   cancelBtn = document.getElementById("cancelBtn");
 
-  //para el parametro singeo
-  let url = `/get-locations?ruta=${ruta}`;
+  console.log('ruta ' + ruta)
+  console.log('nsup ' + nsup)
+
+  let url = '/get-locations?' //  let url = `${window.location.origin}/GeolocalizarMapa?`;
+
+  if (ruta) {
+    url += `ruta=${ruta}`;
+  }
+
+  if (nsup) {
+    url += `nsup=${nsup}`;
+  }
+
   if (singeo === '1') {
     url += `&singeo=${singeo}`;
   }
+  console.log(url)
 
   let lngInc = 0;
   let noGeo = 0;
@@ -48,24 +67,32 @@ function initMap() {
           let lng = parseFloat(SUM_LONGITUD);
           //console.log("ubicacion " + lat + " " + lng)
           rutaLat = parseFloat(LAT_DEF)
-          rutaLng = parseFloat(LONG_DEF) 
+          rutaLng = parseFloat(LONG_DEF)
 
           noGeo = 0
           if (isNaN(lat) || lat === 0 || isNaN(lng) || lng === 0) {
-              lat = rutaLat
-              lng = rutaLng + (0.0002 * lngInc)
-              lngInc = lngInc + 1
-              //console.log("se asigno pos centro ruta " + lat + " " + lng)
-              noGeo = 1
+            lat = rutaLat
+            lng = rutaLng + (0.0002 * lngInc)
+            lngInc = lngInc + 1
+            //console.log("se asigno pos centro ruta " + lat + " " + lng)
+            noGeo = 1
+
           }
           const calle = SUM_CALLE.trim().replace(/\s+/g, " ");
           const altura = SUM_ALTURA ? SUM_ALTURA : '';
           const anexo = SUM_ANEXO ? SUM_ANEXO : '';
-          createMarker(lat, lng, calle, altura, anexo, CLI_TITULAR, SUM_CLIENTE, SUM_ID,noGeo);
 
+          createMarker(lat, lng, calle, altura, anexo, CLI_TITULAR, SUM_CLIENTE, SUM_ID, noGeo);
 
         });  //end data success
-        map.setCenter({lat: rutaLat, lng: rutaLng});        
+        // Verificar si rutaLat y rutaLng son números válidos antes de centrar el mapa
+        if (!isNaN(rutaLat) && !isNaN(rutaLng)) {
+          map.setCenter({ lat: rutaLat, lng: rutaLng });
+        } else {
+          // Establecer un centro predeterminado si rutaLat o rutaLng no son válidos
+          map.setCenter({ lat: -35.663185, lng: -63.761511 }); // Centro predeterminado
+          console.warn("rutaLat o rutaLng no son válidos. Se usó el centro predeterminado.");
+        }
       } else {
         console.error("Error al obtener las ubicaciones del servidor");
       }
@@ -74,8 +101,8 @@ function initMap() {
       console.error("Error al cargar las ubicaciones:", error);
     });
 
-  function createMarker(lat, lng, calle, altura, anexo, titular, cliente, sumin,noGeo) {
-    
+
+  function createMarker(lat, lng, calle, altura, anexo, titular, cliente, sumin, noGeo) {
 
     // Crear el marcador solo si no existe ya uno para esa ubicación
     let existingMarker = markers.find(marker => {
@@ -91,56 +118,55 @@ function initMap() {
     let mcolor = '#D35400'  //default suministro de cliente
     let mcontorno = '#454545'
 
-    if (noGeo == 1)
-    {
+
+    if (noGeo == 1) {
       mescala = 12;
       mcolor = '#000000';
       mcontorno = '#FFFF00';
     }
-    else
-    { 
-    switch(true)    {
-      case (anexo == 'COLUMNA AP'): {
-        mescala = 8;
-        mcolor = '#3864E2';
-        break;
+    else {
+      switch (true) {
+        case (anexo == 'COLUMNA AP'): {
+          mescala = 8;
+          mcolor = '#3864E2';
+          break;
+        }
+        case (anexo == 'CENTRO CALLE AP'): {
+          mescala = 8;
+          mcolor = '#3498DB';
+          break;
+        }
+        case (anexo.includes('ORNAMENTAL')): {
+          mescala = 8;
+          mcolor = '#AED6F1';
+          break;
+        }
+        case (anexo == 'TABLERO SE' && titular.includes('der')): {
+          mescala = 8;
+          mcolor = '#FFC0CB';
+          break;
+        }
+        case (anexo == 'TABLERO SE' && titular.includes('dist')): {
+          mescala = 8;
+          mcolor = '#800080';
+          break;
+        }
+        case (anexo == 'CAPACITOR SE'): {
+          mescala = 10;
+          mcolor = '#808080';
+          break;
+        }
+        case (anexo.includes('LINEA') && titular.includes('/D')): {
+          mescala = 10;
+          mcolor = '#008000';
+          break;
+        }
+        case (anexo == 'SUBESTACION SE'): {
+          mescala = 10;
+          mcolor = '#F4D03F';
+          break;
+        }
       }
-      case (anexo == 'CENTRO CALLE AP'): {
-        mescala = 8;
-        mcolor = '#3498DB';
-        break;
-      }
-      case (anexo.includes('ORNAMENTAL')): {
-        mescala = 8;
-        mcolor = '#AED6F1';
-        break;
-      }
-      case (anexo == 'TABLERO SE' && titular.includes('der') ): {
-        mescala = 8;
-        mcolor = '#FFC0CB';
-        break;
-      }
-      case (anexo == 'TABLERO SE' && titular.includes('dist') ): {
-        mescala = 8;
-        mcolor = '#800080';
-        break;
-      }  
-      case (anexo == 'CAPACITOR SE'): {
-        mescala = 10;
-        mcolor = '#808080';
-        break;
-      }           
-      case (anexo.includes('LINEA') && titular.includes('/D')): {
-        mescala = 10;
-        mcolor = '#008000';
-        break;
-      }   
-      case (anexo == 'SUBESTACION SE'): {
-        mescala = 10;
-        mcolor = '#F4D03F';
-        break;
-      }         
-    }
     }
 
     const marker = new google.maps.Marker({
@@ -151,7 +177,7 @@ function initMap() {
       icon: {
         path: google.maps.SymbolPath.CIRCLE,
         scale: mescala,
-        fillColor: mcolor,   
+        fillColor: mcolor,
         fillOpacity: 1,
         strokeWeight: 2,
         strokeColor: mcontorno
@@ -287,7 +313,8 @@ function initMap() {
       });
   }
 
-  function loadLocationData(idCli,idSum) {
+
+  function loadLocationData(idCli, idSum) {
     fetch(`/get-location/${idCli}/${idSum}`)
       .then((response) => response.json())
       .then((data) => {
@@ -305,24 +332,6 @@ function initMap() {
         console.error("Error al cargar los datos de la ubicación:", error);
       });
   }
-
-
-  // Obtener las coordenadas promedio de la ruta
-/*   fetch(`/get-route-coordinates?ruta=${ruta}`)
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        rutaLat = data.latDef;
-        rutaLng = data.lngDef;
-        console.log("coordenadas centro de ruta: " +  rutaLat + " " + rutaLng)
-        // loadLocations();  // Después de obtener las coordenadas, cargar las ubicaciones
-      } else {
-        console.error("Error al obtener las coordenadas de la ruta");
-      }
-    })
-    .catch(error => {
-      console.error("Error al cargar las coordenadas de la ruta: ", error)
-    }); */
 }
 
 // Carga el mapa al cargar la página
