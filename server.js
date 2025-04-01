@@ -45,6 +45,9 @@ app.use(express.json());
 // Servir archivos estáticos (tu HTML y otros archivos)
 app.use(express.static("public"));
 
+
+//-----------------GET--------------------------------------
+
 // Ruta para la página de inicio
 app.get("/GeolocalizarMapa", (req, res) => {
   res.sendFile(__dirname + "/public/geolocalizar.html"); // Asegúrate de que geolocalizar.html esté en la carpeta "public"
@@ -64,6 +67,14 @@ app.get("/GeolocalizarRutasMapa", (req, res) => {
   console.log(ruta, singeo);
   res.sendFile(__dirname + "/public/index.html");
 });
+
+app.get("/GeolocalizarSupMapa", (req, res) => {
+  const { ruta, singeo } = req.query;
+  console.log(ruta, singeo);
+  res.sendFile(__dirname + "/public/index.html");
+});
+
+// ----------------------------------POST--------------------------------------
 
 // Ruta para actualizar la ubicación
 app.post("/update-location", async (req, res) => {
@@ -168,33 +179,32 @@ app.get("/test-query", async (req, res) => {
 
 // Ruta para obtener las ubicaciones de una ruta específica
 app.get('/get-locations', async (req, res) => {
-  const ruta = req.query.ruta;  
+  const ruta = req.query.ruta;
   const nsup = req.query.nsup;
-  const singeo = req.query.singeo; 
+  const singeo = req.query.singeo;
 
   if (!ruta && !nsup) {
     return res.status(400).json({ error: 'Ruta o SUP es requerida' });
   }
 
-
   let query = `
-    SELECT 
+    SELECT
       SUM_CLIENTE,
       SUM_ID,
       SUM_LATITUD,
       SUM_LONGITUD,
       LEFT(
-        RTRIM(LTRIM(SUM_CALLE)) 
-        + ' ' + RTRIM(LTRIM(ISNULL(SUM_ALTURA, ''))) 
-        + ' ' + 
-        CASE 
-          WHEN ISNULL(SUM_PISO, '') <> '' THEN 'P' + RTRIM(LTRIM(SUM_PISO)) 
-          ELSE '' 
-        END 
-        + CASE 
-          WHEN ISNULL(SUM_DEPARTAMENTO, '') <> '' THEN 'D' + RTRIM(LTRIM(SUM_DEPARTAMENTO)) 
-          ELSE '' 
-        END 
+        RTRIM(LTRIM(SUM_CALLE))
+        + ' ' + RTRIM(LTRIM(ISNULL(SUM_ALTURA, '')))
+        + ' ' +
+        CASE
+          WHEN ISNULL(SUM_PISO, '') <> '' THEN 'P' + RTRIM(LTRIM(SUM_PISO))
+          ELSE ''
+        END
+        + CASE
+          WHEN ISNULL(SUM_DEPARTAMENTO, '') <> '' THEN 'D' + RTRIM(LTRIM(SUM_DEPARTAMENTO))
+          ELSE ''
+        END
         + ' ' + ISNULL(SUM_ANEXO, ''), 45
       ) AS DIRECCION,
       CLI_TITULAR,
@@ -205,27 +215,27 @@ app.get('/get-locations', async (req, res) => {
       SUM_ORDEN_LECTURA,
       LAT_DEF,
       LONG_DEF
-    FROM 
+    FROM
       SUMINISTRO
       JOIN SUMINISTRO_TIPO_EMPRESA ON STE_CLIENTE = SUM_CLIENTE AND STE_SUMINISTRO = SUM_ID AND STE_TIPO_EMPRESA = 3
       JOIN LOCALIDAD ON LOC_ID = SUM_LOCALIDAD
       JOIN CLIENTE ON SUM_CLIENTE = CLI_ID
   `;
-   if (ruta)
-   {
-    query += ` JOIN RUTAS_CENTRO_GEOGRAFICO ON RUT_GRUPO = ISNULL(SUM_GRUPO,0) AND RUT_ID = ISNULL(SUM_RUTA,0)
-    WHERE 
-      ISNULL(SUM_RUTA, 0) = @ruta AND (SUM_FACTURABLE = 'S' OR STE_ESTADO_OPE = 46)
-  `;
-   }
-   if (nsup)
-   {
-    query += ` JOIN SUB_UNIDAD_PROVEEDORA SUB ON SUB.SUP_EMPRESA = STE_EMPRESA AND SUB.SUP_UNIDAD_PROVEEDORA = STE_UNIDAD_PROVEEDORA AND SUB.SUP_ID = STE_SUB_UNIDAD_PROVEEDORA
-    JOIN SUP_CENTRO_GEOGRAFICO SCG ON SCG.SUP_UNIDAD_PROVEEDORA = STE_UNIDAD_PROVEEDORA AND SCG.SUP_ID = STE_SUB_UNIDAD_PROVEEDORA
-    WHERE 
-      ISNULL(SUB.SUP_DESCRIPCION,'') = @nsup AND (SUM_FACTURABLE = 'S' OR STE_ESTADO_OPE = 46)
-  `;
-   }
+
+  if (ruta) {
+    query += `
+      JOIN RUTAS_CENTRO_GEOGRAFICO ON RUT_GRUPO = ISNULL(SUM_GRUPO,0) AND RUT_ID = ISNULL(SUM_RUTA,0)
+      WHERE
+        ISNULL(SUM_RUTA, 0) = @ruta AND (SUM_FACTURABLE = 'S' OR STE_ESTADO_OPE = 46)
+    `;
+  } else if (nsup) {
+    query += `
+      JOIN SUB_UNIDAD_PROVEEDORA SUB ON SUB.SUP_EMPRESA = STE_EMPRESA AND SUB.SUP_UNIDAD_PROVEEDORA = STE_UNIDAD_PROVEEDORA AND SUB.SUP_ID = STE_SUB_UNIDAD_PROVEEDORA
+      JOIN SUP_CENTRO_GEOGRAFICO SCG ON SCG.SUP_UNIDAD_PROVEEDORA = STE_UNIDAD_PROVEEDORA AND SCG.SUP_ID = STE_SUB_UNIDAD_PROVEEDORA
+      WHERE
+        ISNULL(SUB.SUP_DESCRIPCION,'') = @nsup AND (SUM_FACTURABLE = 'S' OR STE_ESTADO_OPE = 46)
+    `;
+  }
 
   // Filtrar por las coordenadas dependiendo del valor de singeo
   if (singeo === '0') {
@@ -236,12 +246,18 @@ app.get('/get-locations', async (req, res) => {
 
   try {
     const request = pool.request();
-    request.input("ruta", sql.Int, ruta); 
-    request.input("nsup", sql.VarChar(30), nsup);
+    if (ruta) {
+      request.input("ruta", sql.Int, ruta);
+    } else if (nsup) {
+      request.input("nsup", sql.VarChar(30), nsup);
+    }
+
+    console.log("Consulta SQL:", query);
+    console.log("Parámetros:", { ruta, nsup, singeo });
 
     const result = await request.query(query);
     res.json({ success: true, locations: result.recordset });
-    console.log(new Date().toLocaleString().slice(0,24) + ` -- Consulta RUTA ${ruta} SUB ${nsup} finalizada OK`);
+    console.log(new Date().toLocaleString().slice(0, 24) + ` -- Consulta RUTA ${ruta} SUB ${nsup} finalizada OK`);
   } catch (err) {
     console.error("Error al ejecutar la consulta:", err);
     res.status(500).json({ success: false, message: "Error al consultar las ubicaciones" });
@@ -319,6 +335,35 @@ ORDER BY RUT_GRUPO, RUT_ID
     res.status(500).json({ success: false, message: "Error al consultar las rutas", error: error.message });
   }
 
+});
+
+app.get('/get-subestaciones', async (req, res) => {
+  const query = `
+SELECT 
+  SUB.SUP_UNIDAD_PROVEEDORA,
+  SUB.SUP_ID,
+  SUB.SUP_DESCRIPCION,
+  COUNT(CASE WHEN SUM_LATITUD IS NULL OR SUM_LATITUD = 0 OR SUM_LONGITUD IS NULL OR SUM_LONGITUD = 0 THEN 1 ELSE 0 END) AS sinGeolocalizar
+FROM 
+  SUB_UNIDAD_PROVEEDORA SUB
+  INNER JOIN SUMINISTRO_TIPO_EMPRESA STE ON SUB.SUP_EMPRESA = STE_EMPRESA AND SUB.SUP_UNIDAD_PROVEEDORA = STE_UNIDAD_PROVEEDORA AND SUB.SUP_ID = STE_SUB_UNIDAD_PROVEEDORA
+  INNER JOIN SUMINISTRO ON STE_CLIENTE = SUM_CLIENTE AND STE_SUMINISTRO = SUM_ID AND STE_TIPO_EMPRESA = 3
+WHERE SUM_FACTURABLE = 'S' OR STE_ESTADO_OPE = 46
+GROUP BY SUB.SUP_UNIDAD_PROVEEDORA, SUB.SUP_ID, SUB.SUP_DESCRIPCION
+ORDER BY SUB.SUP_UNIDAD_PROVEEDORA, SUB.SUP_ID
+  `;
+
+  try {
+      const request = pool.request();
+      const result = await request.query(query);
+
+      res.json({
+          success: true,
+          subestaciones: result.recordset
+      });
+  } catch (error) {
+      res.status(500).json({ success: false, message: "Error al consultar las subestaciones", error: error.message });
+  }
 });
 
 // Iniciar el servidor

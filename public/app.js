@@ -13,18 +13,8 @@ async function fetchRoutes() {
         console.error("Error al hacer la petición", error);
     }
 }
-// function navigateTo(route) {
-//     // Cambiar la URL sin recargar la página
-//     history.pushState(null, '', `/${route}`);
 
-//     // Aquí puedes cargar el contenido dinámicamente si lo deseas,
-//     // como cargar una vista de rutas o cualquier otra acción.
-//     // Este paso depende de cómo gestiones tu contenido en la página.
-
-//     console.log('Navegando a:', route); // Solo para fines de depuración
-// }
-
-// Si quieres manejar los eventos cuando el usuario navega hacia atrás o adelante, puedes escuchar los cambios de URL
+//eventos cuando el usuario navega hacia atrás o adelante, puedes escuchar los cambios de URL
 window.onpopstate = function (event) {
     console.log("La URL cambió:", document.location);
     // Aquí podrías cargar contenido dinámico según la URL.
@@ -51,10 +41,11 @@ function loadRoutes(routesData) {
         descripcionCell.textContent = route.RUT_DESCRIPCION;
         row.appendChild(descripcionCell);
 
-        // Celda para el conteo de suministros sin geolocalización
+        // sin geolocalización
         const sinGeoCell = document.createElement("td");
         sinGeoCell.textContent = route.sinGeolocalizar; // Muestra el conteo específico por cada ruta
         row.appendChild(sinGeoCell);
+        
 
         // Crear el botón con el enlace al mapa-singeo
         const mapaButtonSingeo = document.createElement("td");
@@ -65,8 +56,6 @@ function loadRoutes(routesData) {
             const rutaId = route.RUT_ID;
             const singeo = 1;  // Si hay suministros sin geolocalizar, usamos 1
 
-            // Redirigir al mapa con los parámetros
-            // window.location.href = `${window.location.origin}/?ruta=${rutaId}&singeo=${singeo}`;
             window.location.href = `${window.location.origin}/GeolocalizarRutasMapa?ruta=${rutaId}&singeo=${singeo}`;
        
         };
@@ -83,9 +72,6 @@ function loadRoutes(routesData) {
             const rutaId = route.RUT_ID;
             const singeo = 0;  // Si hay suministros sin geolocalizar, usamos 1
 
-
-            // Redirigir al mapa con los parámetros
-            // window.location.href = `${window.location.origin}/?ruta=${rutaId}&singeo=${singeo}`;
             window.location.href = `${window.location.origin}/GeolocalizarRutasMapa?ruta=${rutaId}&singeo=${singeo}`;
         };
 
@@ -96,71 +82,76 @@ function loadRoutes(routesData) {
     });
 }
 
-// Función para agregar las filas de las rutas a la tabla
-function loadRoutes(routesData) {
-    const tableBody = document.getElementById("subTableBody");
-    tableBody.innerHTML = '';  // Limpia la tabla antes de llenarla
+async function fetchSubestaciones() {
+    try {
+        const response = await fetch('/get-subestaciones');
+        const data = await response.json();
 
-    routesData.forEach(route => {
+        if (data.success) {
+            const subestacionesData = data.subestaciones;
+            loadSubestaciones(subestacionesData);
+        } else {
+            console.error("Error al obtener las subestaciones", data.message);
+        }
+    } catch (error) {
+        console.error("Error al hacer la petición", error);
+    }
+}
+
+function loadSubestaciones(subestacionesData) {
+    const tableBody = document.getElementById("subTableBody"); // Usa el mismo tbody
+    tableBody.innerHTML = ''; // Limpia la tabla
+
+    subestacionesData.forEach(subestacion => {
         const row = document.createElement("tr");
 
         // Crear celdas para cada columna
-        const grupoCell = document.createElement("td");
-        grupoCell.textContent = route.RUT_GRUPO;
-        row.appendChild(grupoCell);
+        const unidadProveedorCell = document.createElement("td");
+        unidadProveedorCell.textContent = subestacion.SUP_UNIDAD_PROVEEDORA;
+        row.appendChild(unidadProveedorCell);
 
-        const idRutaCell = document.createElement("td");
-        idRutaCell.textContent = route.RUT_ID;
-        row.appendChild(idRutaCell);
+        const idSubestacionCell = document.createElement("td");
+        idSubestacionCell.textContent = subestacion.SUP_ID;
+        row.appendChild(idSubestacionCell);
 
         const descripcionCell = document.createElement("td");
-        descripcionCell.textContent = route.RUT_DESCRIPCION;
+        descripcionCell.textContent = subestacion.SUP_DESCRIPCION;
         row.appendChild(descripcionCell);
 
-        // Celda para el conteo de suministros sin geolocalización
         const sinGeoCell = document.createElement("td");
-        sinGeoCell.textContent = route.sinGeolocalizar; // Muestra el conteo específico por cada ruta
+        sinGeoCell.textContent = subestacion.sinGeolocalizar;
         row.appendChild(sinGeoCell);
 
-        // Crear el botón con el enlace al mapa-singeo
+        // Botones para el mapa (similar a rutas)
         const mapaButtonSingeo = document.createElement("td");
         const mapaButton = document.createElement("button");
         mapaButton.textContent = "Mapa";
-        mapaButton.classList.add("btn", "btn-primary"); // Estilo de botón usando Bootstrap
+        mapaButton.classList.add("btn", "btn-primary");
         mapaButton.onclick = function () {
-            const rutaId = route.RUT_ID;
-            const singeo = 1;  // Si hay suministros sin geolocalizar, usamos 1
-
-            // Redirigir al mapa con los parámetros
-            // window.location.href = `${window.location.origin}/?ruta=${rutaId}&singeo=${singeo}`;
-            window.location.href = `${window.location.origin}/GeolocalizarSubMapa?ruta=${rutaId}&singeo=${singeo}`;
-       
+            const nsup = subestacion.SUP_DESCRIPCION;
+            const singeo = 1;
+            window.location.href = `${window.location.origin}/GeolocalizarSupMapa?nsup=${nsup}&singeo=${singeo}`;
         };
-
         mapaButtonSingeo.appendChild(mapaButton);
         row.appendChild(mapaButtonSingeo);
 
-        // Crear el botón con el enlace al mapa
         const mapaButtonCongeo = document.createElement("td");
         const mapaButton2 = document.createElement("button");
         mapaButton2.textContent = "Mapa";
-        mapaButton2.classList.add("btn", "btn-primary"); // Estilo de botón usando Bootstrap
+        mapaButton2.classList.add("btn", "btn-primary");
         mapaButton2.onclick = function () {
-            const rutaId = route.RUT_ID;
-            const singeo = 0;  // Si hay suministros sin geolocalizar, usamos 1
-
-
-            // Redirigir al mapa con los parámetros
-            // window.location.href = `${window.location.origin}/?ruta=${rutaId}&singeo=${singeo}`;
-            window.location.href = `${window.location.origin}/GeolocalizarSubMapa?ruta=${rutaId}&singeo=${singeo}`;
+            const nsup = subestacion.SUP_DESCRIPCION;
+            const singeo = 0;
+            window.location.href = `${window.location.origin}/GeolocalizarSupMapa?nsup=${nsup}&singeo=${singeo}`;
         };
-
         mapaButtonCongeo.appendChild(mapaButton2);
         row.appendChild(mapaButtonCongeo);
 
         tableBody.appendChild(row);
     });
 }
+
+
 
 // Función para actualizar el conteo de suministros sin geolocalización
 function updateSinGeolocalizarCount(routesData) {
@@ -176,4 +167,7 @@ function updateSinGeolocalizarCount(routesData) {
     sinGeoHeader.textContent = `SIN GEOLOCALIZAR (${totalSinGeo})`; // Actualiza el encabezado
 }
 
-window.onload = fetchRoutes;
+window.onload = function() {
+    fetchRoutes(); // Carga las rutas
+    fetchSubestaciones(); // Carga las subestaciones
+};

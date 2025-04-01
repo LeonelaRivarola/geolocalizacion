@@ -11,16 +11,16 @@ let newLat, newLng;
 function initMap() {
   const urlParams = new URLSearchParams(window.location.search);
   ruta = urlParams.get('ruta');
-  nsup = urlParams.get('sup')
+  nsup = urlParams.get('nsup')
   singeo = urlParams.get('singeo');
 
 
   if (!ruta && !nsup) {
-    alert(`El parámetro de ruta = ${ruta} o sup = ${nsup} no está definido en la URL`);
+    alert(`El parámetro de ruta = ${ruta} o nsup = ${nsup} no está definido en la URL`);
     return;
   }
   if (ruta && nsup) {
-    alert("El parámetro de ruta y sup son de opcion excluyente");
+    alert("El parámetro de ruta y nsup son de opcion excluyente");
     return;
   }
 
@@ -36,7 +36,7 @@ function initMap() {
   cancelBtn = document.getElementById("cancelBtn");
 
   console.log('ruta ' + ruta)
-  console.log('sup ' + nsup)
+  console.log('nsup ' + nsup)
 
   let url = '/get-locations?' //  let url = `${window.location.origin}/GeolocalizarMapa?`;
 
@@ -83,7 +83,14 @@ function initMap() {
           createMarker(lat, lng, calle, altura, anexo, CLI_TITULAR, SUM_CLIENTE, SUM_ID, noGeo);
 
         });  //end data success
-        map.setCenter({ lat: rutaLat, lng: rutaLng });
+        // Verificar si rutaLat y rutaLng son números válidos antes de centrar el mapa
+        if (!isNaN(rutaLat) && !isNaN(rutaLng)) {
+          map.setCenter({ lat: rutaLat, lng: rutaLng });
+        } else {
+          // Establecer un centro predeterminado si rutaLat o rutaLng no son válidos
+          map.setCenter({ lat: -35.663185, lng: -63.761511 }); // Centro predeterminado
+          console.warn("rutaLat o rutaLng no son válidos. Se usó el centro predeterminado.");
+        }
       } else {
         console.error("Error al obtener las ubicaciones del servidor");
       }
