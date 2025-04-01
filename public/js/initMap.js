@@ -1,6 +1,6 @@
 let currentInfoWindow = null;
-let markers = []; 
-let modal, span, confirmBtn, cancelBtn; 
+let markers = [];
+let modal, span, confirmBtn, cancelBtn;
 let ruta = null;
 let nsup = null;
 let singeo = null;
@@ -101,6 +101,34 @@ function initMap() {
       console.error("Error al cargar las ubicaciones:", error);
     });
 
+  // Crear el botón "Volver"
+  const backButton = document.createElement('button');
+  backButton.textContent = 'Volver';
+  backButton.classList.add('back-button');
+
+  map.controls[google.maps.ControlPosition.TOP_LEFT].push(backButton);
+
+  backButton.addEventListener('click', function () {
+    window.history.back();
+  });
+
+  // Estilos
+  const style = document.createElement('style');
+  style.textContent = `
+    .back-button {
+        background-color: #4CAF50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 10px;
+        cursor: pointer;
+    }
+`;
+  document.head.appendChild(style);
 
   function createMarker(lat, lng, calle, altura, anexo, titular, cliente, sumin, noGeo) {
 

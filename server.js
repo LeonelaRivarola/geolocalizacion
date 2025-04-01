@@ -48,30 +48,33 @@ app.use(express.static("public"));
 
 //-----------------GET--------------------------------------
 
-// Ruta para la página de inicio
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/public/inicioSesion.html");
+});
+
 app.get("/GeolocalizarMapa", (req, res) => {
   res.sendFile(__dirname + "/public/geolocalizar.html"); // Asegúrate de que geolocalizar.html esté en la carpeta "public"
 });
 
 app.get("/GeolocalizarRutas", (req, res) => {
-   res.sendFile(__dirname + "/public/RutasGeolocalizacion.html");
+   res.sendFile(__dirname + "/public/rutasGeolocalizacion.html");
 });
 
 
 app.get("/GeolocalizarSup", (req, res) => {
-  res.sendFile(__dirname + "/public/SupGeolocalizacion.html"); // Asegúrate de que geolocalizar.html esté en la carpeta "public"
+  res.sendFile(__dirname + "/public/supGeolocalizacion.html"); // Asegúrate de que geolocalizar.html esté en la carpeta "public"
 });
 
 app.get("/GeolocalizarRutasMapa", (req, res) => {
   const { ruta, singeo } = req.query;
   console.log(ruta, singeo);
-  res.sendFile(__dirname + "/public/index.html");
+  res.sendFile(__dirname + "/public/mapa.html");
 });
 
 app.get("/GeolocalizarSupMapa", (req, res) => {
   const { ruta, singeo } = req.query;
   console.log(ruta, singeo);
-  res.sendFile(__dirname + "/public/index.html");
+  res.sendFile(__dirname + "/public/mapa.html");
 });
 
 // ----------------------------------POST--------------------------------------
@@ -215,22 +218,11 @@ app.get('/get-locations', async (req, res) => {
       SUM_ORDEN_LECTURA,
       LAT_DEF,
       LONG_DEF
-<<<<<<< HEAD
-    FROM 
-=======
     FROM
->>>>>>> urlJefe
       SUMINISTRO
       JOIN SUMINISTRO_TIPO_EMPRESA ON STE_CLIENTE = SUM_CLIENTE AND STE_SUMINISTRO = SUM_ID AND STE_TIPO_EMPRESA = 3
       JOIN LOCALIDAD ON LOC_ID = SUM_LOCALIDAD
       JOIN CLIENTE ON SUM_CLIENTE = CLI_ID
-<<<<<<< HEAD
-      JOIN RUTAS_CENTRO_GEOGRAFICO ON RUT_GRUPO = ISNULL(SUM_GRUPO,0) AND RUT_ID = ISNULL(SUM_RUTA,0)
-    WHERE 
-      ISNULL(SUM_RUTA, 0) = @ruta  -- Usamos el parámetro de la ruta
-      AND (SUM_FACTURABLE = 'S' OR STE_ESTADO_OPE = 46)
-=======
->>>>>>> urlJefe
   `;
 
   if (ruta) {
@@ -263,8 +255,8 @@ app.get('/get-locations', async (req, res) => {
       request.input("nsup", sql.VarChar(30), nsup);
     }
 
-    console.log("Consulta SQL:", query);
-    console.log("Parámetros:", { ruta, nsup, singeo });
+    // console.log("Consulta SQL:", query);
+    // console.log("Parámetros:", { ruta, nsup, singeo });
 
     const result = await request.query(query);
     res.json({ success: true, locations: result.recordset });
@@ -354,7 +346,7 @@ SELECT
   SUB.SUP_UNIDAD_PROVEEDORA,
   SUB.SUP_ID,
   SUB.SUP_DESCRIPCION,
-  COUNT(CASE WHEN SUM_LATITUD IS NULL OR SUM_LATITUD = 0 OR SUM_LONGITUD IS NULL OR SUM_LONGITUD = 0 THEN 1 ELSE 0 END) AS sinGeolocalizar
+  SUM(CASE WHEN SUM_LATITUD IS NULL OR SUM_LATITUD = 0 OR SUM_LONGITUD IS NULL OR SUM_LONGITUD = 0 THEN 1 ELSE 0 END) AS sinGeolocalizar
 FROM 
   SUB_UNIDAD_PROVEEDORA SUB
   INNER JOIN SUMINISTRO_TIPO_EMPRESA STE ON SUB.SUP_EMPRESA = STE_EMPRESA AND SUB.SUP_UNIDAD_PROVEEDORA = STE_UNIDAD_PROVEEDORA AND SUB.SUP_ID = STE_SUB_UNIDAD_PROVEEDORA
